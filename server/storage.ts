@@ -5,6 +5,31 @@ import createMemoryStore from "memorystore";
 
 const MemoryStore = createMemoryStore(session);
 
+export interface IStorage {
+  getUser(id: number): Promise<User | undefined>;
+  getUserByUsername(username: string): Promise<User | undefined>;
+  createUser(insertUser: InsertUser): Promise<User>;
+  getMissedCallsByUserId(userId: number): Promise<MissedCall[]>;
+  createMissedCall(call: Omit<MissedCall, "id">): Promise<MissedCall>;
+  getScheduledMessagesByUserId(userId: number): Promise<ScheduledMessage[]>;
+  createScheduledMessage(message: Omit<ScheduledMessage, "id">): Promise<ScheduledMessage>;
+  getLeadsByUserId(userId: number): Promise<Lead[]>;
+  createLead(lead: Omit<Lead, "id">): Promise<Lead>;
+  updateUser(id: number, updates: Partial<User>): Promise<User>;
+  updateMissedCall(
+    id: number,
+    updates: Partial<MissedCall>
+  ): Promise<MissedCall>;
+  getScheduledMessage(
+    id: number
+  ): Promise<ScheduledMessage | undefined>;
+  updateScheduledMessage(
+    id: number,
+    updates: Partial<ScheduledMessage>
+  ): Promise<ScheduledMessage>;
+  getAllUsers(): Promise<User[]>;
+}
+
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private missedCalls: Map<number, MissedCall>;
@@ -95,6 +120,40 @@ export class MemStorage implements IStorage {
     const updatedUser = { ...user, ...updates };
     this.users.set(id, updatedUser);
     return updatedUser;
+  }
+
+  async updateMissedCall(
+    id: number,
+    updates: Partial<MissedCall>
+  ): Promise<MissedCall> {
+    const call = this.missedCalls.get(id);
+    if (!call) throw new Error("Missed call not found");
+
+    const updatedCall = { ...call, ...updates };
+    this.missedCalls.set(id, updatedCall);
+    return updatedCall;
+  }
+
+  async getScheduledMessage(
+    id: number
+  ): Promise<ScheduledMessage | undefined> {
+    return this.scheduledMessages.get(id);
+  }
+
+  async updateScheduledMessage(
+    id: number,
+    updates: Partial<ScheduledMessage>
+  ): Promise<ScheduledMessage> {
+    const message = this.scheduledMessages.get(id);
+    if (!message) throw new Error("Scheduled message not found");
+
+    const updatedMessage = { ...message, ...updates };
+    this.scheduledMessages.set(id, updatedMessage);
+    return updatedMessage;
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return Array.from(this.users.values());
   }
 }
 

@@ -1,0 +1,49 @@
+Missed Call & SMS Auto-Responder for Local Businesses 📲
+Overview:
+I need an app that automatically responds to missed calls and SMS messages for local businesses using the Twilio API. It should also allow businesses to schedule follow-up texts, collect lead details, and save them in Google Sheets, functioning as a lightweight CRM. The app should include AI-powered suggested replies using OpenAI (optional).
+
+Core Features:
+1️⃣ Missed Call Auto-Responder
+Detect missed calls via Twilio and send an automated SMS response like:
+"Hi! We missed your call. How can we help?"
+Option for businesses to customize the auto-response message.
+Logs missed calls and responses in a dashboard.
+2️⃣ Scheduled Follow-Up Texts
+Businesses can schedule follow-up messages manually.
+UI should include a simple calendar-style picker for scheduling.
+Sends messages via Twilio at the scheduled time.
+3️⃣ AI-Suggested Replies (Optional AI Feature)
+Uses OpenAI API to suggest responses based on the conversation.
+AI should provide 3 suggested replies for the business owner to choose from.
+Businesses can edit or approve AI-generated replies before sending.
+4️⃣ Lead Capture & Google Sheets Integration
+Collects customer name, phone number, and message intent.
+Saves all lead details in a Google Sheet for easy tracking.
+Allows filtering and exporting of leads.
+5️⃣ Simple Subscription-Based Pricing
+$99/month → 1,000 SMS included
+$199/month → 5,000 SMS included
+Extra SMS → $0.05 per SMS
+Simple Stripe payment integration for subscriptions.
+Tech Stack:
+🔹 Frontend: HTML, JavaScript (or simple React Dashboard)
+🔹 Backend: Python (Flask or FastAPI)
+🔹 Database: Google Sheets (as a lightweight CRM)
+🔹 API Integrations:
+
+Twilio → For missed call detection & SMS
+Google Sheets → For lead storage
+OpenAI API (optional) → For AI-generated replies
+Stripe → For subscription payments
+UI/UX Design:
+Clean, Modern Dashboard (Light Mode & Dark Mode)
+Sidebar Navigation:
+📞 Missed Calls Log (list of missed calls & auto-replies)
+📝 Scheduled Messages (view & manage follow-ups)
+📊 Lead Database (search, filter, export leads)
+⚙️ Settings (Twilio API key, message customization)
+💳 Billing (Stripe subscription management)
+Minimalist Aesthetic:
+Rounded UI elements
+Soft shadows & smooth animations
+Easy-to-read typography (Inter, Poppins, or Roboto)

@@ -24,6 +24,24 @@ export const missedCalls = pgTable("missed_calls", {
   responded: boolean("responded").notNull().default(false),
 });
 
+export const conversations = pgTable("conversations", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  missedCallId: integer("missed_call_id"),
+  phoneNumber: text("phone_number").notNull(),
+  lastMessageAt: timestamp("last_message_at").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const messages = pgTable("messages", {
+  id: serial("id").primaryKey(),
+  conversationId: integer("conversation_id").notNull(),
+  content: text("content").notNull(),
+  fromUser: boolean("from_user").notNull(),
+  timestamp: timestamp("timestamp").notNull().defaultNow(),
+  delivered: boolean("delivered").notNull().default(false),
+});
+
 export const scheduledMessages = pgTable("scheduled_messages", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
@@ -52,9 +70,13 @@ export const insertUserSchema = createInsertSchema(users).pick({
 export const insertMissedCallSchema = createInsertSchema(missedCalls);
 export const insertScheduledMessageSchema = createInsertSchema(scheduledMessages);
 export const insertLeadSchema = createInsertSchema(leads);
+export const insertConversationSchema = createInsertSchema(conversations);
+export const insertMessageSchema = createInsertSchema(messages);
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type MissedCall = typeof missedCalls.$inferSelect;
 export type ScheduledMessage = typeof scheduledMessages.$inferSelect;
 export type Lead = typeof leads.$inferSelect;
+export type Conversation = typeof conversations.$inferSelect;
+export type Message = typeof messages.$inferSelect;

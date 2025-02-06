@@ -6,6 +6,7 @@ import { insertLeadSchema, insertScheduledMessageSchema } from "@shared/schema";
 import { handleMissedCall } from "./twilio-service";
 import { z } from "zod";
 import { initGoogleSheetsService } from './google-sheets-service';
+import twilio from 'twilio'; // Assuming this import is handled elsewhere
 
 export function registerRoutes(app: Express): Server {
   // Initialize Google Sheets service with credentials
@@ -75,6 +76,71 @@ export function registerRoutes(app: Express): Server {
     res.status(201).json(lead);
   });
 
+  // Conversations
+  app.get("/api/conversations", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const conversations = await storage.getConversationsByUserId(req.user.id);
+    res.json(conversations);
+  });
+
+  app.get("/api/conversations/:id/messages", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    const conversation = await storage.getConversation(parseInt(req.params.id));
+    if (!conversation || conversation.userId !== req.user.id) {
+      return res.sendStatus(404);
+    }
+
+    const messages = await storage.getMessagesByConversationId(conversation.id);
+    res.json(messages);
+  });
+
+  app.post("/api/conversations/:id/messages", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    const conversation = await storage.getConversation(parseInt(req.params.id));
+    if (!conversation || conversation.userId !== req.user.id) {
+      return res.sendStatus(404);
+    }
+
+    const message = await storage.createMessage({
+      conversationId: conversation.id,
+      content: req.body.content,
+      fromUser: true,
+      timestamp: new Date(),
+      delivered: false,
+    });
+
+    // Send the message via Twilio
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user?.twilioPhoneNumber) {
+        throw new Error("Twilio phone number not configured");
+      }
+
+      const twilioClient = twilio(
+        process.env.TWILIO_ACCOUNT_SID!,
+        process.env.TWILIO_AUTH_TOKEN!
+      );
+
+      await twilioClient.messages.create({
+        body: message.content,
+        to: conversation.phoneNumber,
+        from: user.twilioPhoneNumber,
+      });
+
+      // Mark the message as delivered
+      const updatedMessage = await storage.updateMessage(message.id, {
+        delivered: true,
+      });
+
+      res.status(201).json(updatedMessage);
+    } catch (error) {
+      console.error("Error sending message:", error);
+      res.status(500).json({ message: "Failed to send message" });
+    }
+  });
+
   // Twilio Webhook for Missed Calls
   app.post("/api/twilio/call-status", async (req, res) => {
     console.log("Received call status webhook:", req.body);
@@ -83,25 +149,46 @@ export function registerRoutes(app: Express): Server {
     const from = req.body.From;
     const callerName = req.body.CallerName;
 
-    // Handle missed calls: no-answer, busy, failed, canceled
     if (["no-answer", "busy", "failed", "canceled"].includes(callStatus)) {
       console.log("Processing missed call for status:", callStatus);
-      // Find user by Twilio phone number
       const users = await storage.getAllUsers();
       const user = users.find(u => u.twilioPhoneNumber === to);
 
       if (user) {
         console.log("Found user for phone number:", to);
-        await handleMissedCall(user.id, {
+        const missedCall = await handleMissedCall(user.id, {
           from,
           to,
           callerName,
         });
+
+        // Create or find existing conversation
+        let conversation = (await storage.getConversationsByUserId(user.id))
+          .find(c => c.phoneNumber === from);
+
+        if (!conversation) {
+          conversation = await storage.createConversation({
+            userId: user.id,
+            missedCallId: missedCall.id,
+            phoneNumber: from,
+            lastMessageAt: new Date(),
+            createdAt: new Date(),
+          });
+        }
+
+        // Add the auto-response message to the conversation
+        if (user.autoResponseMessage) {
+          await storage.createMessage({
+            conversationId: conversation.id,
+            content: user.autoResponseMessage,
+            fromUser: true,
+            timestamp: new Date(),
+            delivered: missedCall.responded,
+          });
+        }
       } else {
         console.log("No user found for phone number:", to);
       }
-    } else {
-      console.log("Ignoring call status:", callStatus);
     }
 
     res.sendStatus(200);

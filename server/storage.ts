@@ -1,5 +1,5 @@
 import { IStorage } from "./types";
-import { User, InsertUser, MissedCall, ScheduledMessage, Lead } from "@shared/schema";
+import { User, InsertUser, MissedCall, ScheduledMessage, Lead, Conversation, Message } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
 import { GoogleSheetsService, initGoogleSheetsService, getGoogleSheetsService } from './google-sheets-service';
@@ -17,21 +17,20 @@ export interface IStorage {
   getLeadsByUserId(userId: number): Promise<Lead[]>;
   createLead(lead: Omit<Lead, "id">): Promise<Lead>;
   updateUser(id: number, updates: Partial<User>): Promise<User>;
-  updateMissedCall(
-    id: number,
-    updates: Partial<MissedCall>
-  ): Promise<MissedCall>;
-  getScheduledMessage(
-    id: number
-  ): Promise<ScheduledMessage | undefined>;
-  updateScheduledMessage(
-    id: number,
-    updates: Partial<ScheduledMessage>
-  ): Promise<ScheduledMessage>;
+  updateMissedCall(id: number, updates: Partial<MissedCall>): Promise<MissedCall>;
+  getScheduledMessage(id: number): Promise<ScheduledMessage | undefined>;
+  updateScheduledMessage(id: number, updates: Partial<ScheduledMessage>): Promise<ScheduledMessage>;
   getAllUsers(): Promise<User[]>;
   sessionStore: session.Store;
   initializeGoogleSheets(): Promise<string>;
   syncLeadsToSheets(): Promise<void>;
+
+  getConversationsByUserId(userId: number): Promise<Conversation[]>;
+  getConversation(id: number): Promise<Conversation | undefined>;
+  createConversation(conversation: Omit<Conversation, "id">): Promise<Conversation>;
+  getMessagesByConversationId(conversationId: number): Promise<Message[]>;
+  createMessage(message: Omit<Message, "id">): Promise<Message>;
+  updateMessage(id: number, updates: Partial<Message>): Promise<Message>;
 }
 
 export class MemStorage implements IStorage {
@@ -39,6 +38,8 @@ export class MemStorage implements IStorage {
   private missedCalls: Map<number, MissedCall>;
   private scheduledMessages: Map<number, ScheduledMessage>;
   private leads: Map<number, Lead>;
+  private conversations: Map<number, Conversation>;
+  private messages: Map<number, Message>;
   sessionStore: session.Store;
   currentId: number;
 
@@ -47,6 +48,8 @@ export class MemStorage implements IStorage {
     this.missedCalls = new Map();
     this.scheduledMessages = new Map();
     this.leads = new Map();
+    this.conversations = new Map();
+    this.messages = new Map();
     this.currentId = 1;
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000,
@@ -210,6 +213,55 @@ export class MemStorage implements IStorage {
 
   async getAllLeads(): Promise<Lead[]> {
     return Array.from(this.leads.values());
+  }
+
+  async getConversationsByUserId(userId: number): Promise<Conversation[]> {
+    return Array.from(this.conversations.values()).filter(
+      (conv) => conv.userId === userId
+    );
+  }
+
+  async getConversation(id: number): Promise<Conversation | undefined> {
+    return this.conversations.get(id);
+  }
+
+  async createConversation(conversation: Omit<Conversation, "id">): Promise<Conversation> {
+    const id = this.currentId++;
+    const newConversation = { ...conversation, id };
+    this.conversations.set(id, newConversation);
+    return newConversation;
+  }
+
+  async getMessagesByConversationId(conversationId: number): Promise<Message[]> {
+    return Array.from(this.messages.values())
+      .filter((msg) => msg.conversationId === conversationId)
+      .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+  }
+
+  async createMessage(message: Omit<Message, "id">): Promise<Message> {
+    const id = this.currentId++;
+    const newMessage = { ...message, id };
+    this.messages.set(id, newMessage);
+
+    // Update the conversation's lastMessageAt timestamp
+    const conversation = this.conversations.get(message.conversationId);
+    if (conversation) {
+      this.conversations.set(conversation.id, {
+        ...conversation,
+        lastMessageAt: message.timestamp,
+      });
+    }
+
+    return newMessage;
+  }
+
+  async updateMessage(id: number, updates: Partial<Message>): Promise<Message> {
+    const message = this.messages.get(id);
+    if (!message) throw new Error("Message not found");
+
+    const updatedMessage = { ...message, ...updates };
+    this.messages.set(id, updatedMessage);
+    return updatedMessage;
   }
 }
 

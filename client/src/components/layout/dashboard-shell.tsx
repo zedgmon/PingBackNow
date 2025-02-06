@@ -9,10 +9,12 @@ import {
   Settings,
   CreditCard,
   LogOut,
+  MessageCircle,
 } from "lucide-react";
 
 const navigation = [
   { name: "Missed Calls", href: "/missed-calls", icon: Phone },
+  { name: "Conversations", href: "/conversations", icon: MessageCircle },
   { name: "Scheduled Messages", href: "/scheduled", icon: CalendarDays },
   { name: "Leads", href: "/leads", icon: Users },
   { name: "Settings", href: "/settings", icon: Settings },
@@ -37,12 +39,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   {navigation.map((item) => (
                     <li key={item.name}>
                       <Link href={item.href}>
-                        <a
+                        <Button
+                          variant="ghost"
                           className={cn(
                             location === item.href
                               ? "bg-gray-50 text-primary"
                               : "text-gray-700 hover:text-primary hover:bg-gray-50",
-                            "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
+                            "w-full justify-start gap-x-3"
                           )}
                         >
                           <item.icon
@@ -50,12 +53,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                               location === item.href
                                 ? "text-primary"
                                 : "text-gray-400 group-hover:text-primary",
-                              "h-6 w-6 shrink-0"
+                              "h-5 w-5"
                             )}
                             aria-hidden="true"
                           />
                           {item.name}
-                        </a>
+                        </Button>
                       </Link>
                     </li>
                   ))}

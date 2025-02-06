@@ -8,6 +8,7 @@ import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth-page";
 import Dashboard from "@/pages/dashboard";
 import MissedCalls from "@/pages/missed-calls";
+import Conversations from "@/pages/conversations";
 import Scheduled from "@/pages/scheduled";
 import Leads from "@/pages/leads";
 import Settings from "@/pages/settings";
@@ -18,6 +19,7 @@ function Router() {
     <Switch>
       <ProtectedRoute path="/" component={Dashboard} />
       <ProtectedRoute path="/missed-calls" component={MissedCalls} />
+      <ProtectedRoute path="/conversations" component={Conversations} />
       <ProtectedRoute path="/scheduled" component={Scheduled} />
       <ProtectedRoute path="/leads" component={Leads} />
       <ProtectedRoute path="/settings" component={Settings} />

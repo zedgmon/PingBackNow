@@ -28,6 +28,9 @@ async function comparePasswords(supplied: string, stored: string) {
   return timingSafeEqual(hashedBuf, suppliedBuf);
 }
 
+// Initialize test user with proper password hashing
+storage.initializeTestUser(hashPassword).catch(console.error);
+
 export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
     secret: process.env.REPL_ID!,
@@ -46,19 +49,26 @@ export function setupAuth(app: Express) {
 
   passport.use(
     new LocalStrategy(async (username, password, done) => {
-      const user = await storage.getUserByUsername(username);
-      if (!user || !(await comparePasswords(password, user.password))) {
-        return done(null, false);
-      } else {
+      try {
+        const user = await storage.getUserByUsername(username);
+        if (!user || !(await comparePasswords(password, user.password))) {
+          return done(null, false);
+        }
         return done(null, user);
+      } catch (error) {
+        return done(error);
       }
-    }),
+    })
   );
 
   passport.serializeUser((user, done) => done(null, user.id));
   passport.deserializeUser(async (id: number, done) => {
-    const user = await storage.getUser(id);
-    done(null, user);
+    try {
+      const user = await storage.getUser(id);
+      done(null, user);
+    } catch (error) {
+      done(error);
+    }
   });
 
   app.post("/api/register", async (req, res, next) => {

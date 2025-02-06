@@ -28,6 +28,7 @@ export interface IStorage {
     updates: Partial<ScheduledMessage>
   ): Promise<ScheduledMessage>;
   getAllUsers(): Promise<User[]>;
+  sessionStore: session.Store;
 }
 
 export class MemStorage implements IStorage {
@@ -47,12 +48,13 @@ export class MemStorage implements IStorage {
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000,
     });
+  }
 
-    // Initialize with a test user that has Twilio credentials
+  async initializeTestUser(hasher: (pwd: string) => Promise<string>) {
     const testUser: User = {
       id: this.currentId++,
       username: "test",
-      password: "1edf06fcef65bd2d8ac24b3f04e026448577dc06e44f6a7ea5d3fc2e1f39f890.3b06d6e0ab4589b8799e168332f5813b", // "password"
+      password: await hasher("password"),
       businessName: "Test Business",
       twilioAccountSid: process.env.TWILIO_ACCOUNT_SID || null,
       twilioAuthToken: process.env.TWILIO_AUTH_TOKEN || null,
@@ -62,6 +64,7 @@ export class MemStorage implements IStorage {
       stripeCustomerId: null,
     };
     this.users.set(testUser.id, testUser);
+    return testUser;
   }
 
   async getUser(id: number): Promise<User | undefined> {

@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, boolean, decimal } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
@@ -14,6 +14,9 @@ export const users = pgTable("users", {
   autoResponseMessage: text("auto_response_message"),
   subscriptionPlan: text("subscription_plan"),
   stripeCustomerId: text("stripe_customer_id"),
+  creditBalance: decimal("credit_balance").notNull().default("0"),
+  lowBalanceNotificationSent: boolean("low_balance_notification_sent").notNull().default(false),
+  lastBalanceNotificationAt: timestamp("last_balance_notification_at"),
 });
 
 export const messageUsage = pgTable("message_usage", {
@@ -71,6 +74,15 @@ export const leads = pgTable("leads", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  type: text("type").notNull(), // 'low_balance', 'critical_balance', etc.
+  message: text("message").notNull(),
+  read: boolean("read").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   missedCalls: many(missedCalls),
@@ -78,6 +90,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   scheduledMessages: many(scheduledMessages),
   leads: many(leads),
   messageUsage: many(messageUsage),
+  notifications: many(notifications),
 }));
 
 export const conversationsRelations = relations(conversations, ({ one, many }) => ({
@@ -112,6 +125,7 @@ export const insertLeadSchema = createInsertSchema(leads);
 export const insertConversationSchema = createInsertSchema(conversations);
 export const insertMessageSchema = createInsertSchema(messages);
 export const insertMessageUsageSchema = createInsertSchema(messageUsage);
+export const insertNotificationSchema = createInsertSchema(notifications);
 
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -123,3 +137,5 @@ export type Conversation = typeof conversations.$inferSelect;
 import type { InferSelect } from "drizzle-orm";
 export type Message = typeof messages.$inferSelect;
 export type MessageUsage = typeof messageUsage.$inferSelect;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type Notification = typeof notifications.$inferSelect;

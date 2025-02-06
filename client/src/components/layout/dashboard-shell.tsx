@@ -12,6 +12,7 @@ import {
   MessageCircle,
   Home,
 } from "lucide-react";
+import { NotificationBell } from "@/components/ui/notifications";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
@@ -74,8 +75,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-background flex">
       {/* Sidebar - Always visible */}
       <div className="w-64 flex-shrink-0 border-r bg-card">
-        <div className="flex h-16 shrink-0 items-center px-6">
+        <div className="flex h-16 shrink-0 items-center px-6 justify-between">
           <h1 className="text-lg font-semibold">Business Auto-Responder</h1>
+          <NotificationBell />
         </div>
         <div className="flex flex-col gap-y-5 px-6 pb-4">
           <NavContent />

@@ -22,6 +22,60 @@ export function registerRoutes(app: Express): Server {
 
   setupAuth(app);
 
+  // Add the check balance middleware
+  app.use(async (req, res, next) => {
+    if (!req.isAuthenticated()) return next();
+
+    const user = await storage.getUser(req.user.id);
+    if (!user) return next();
+
+    const LOW_BALANCE_THRESHOLD = 10; // $10
+    const CRITICAL_BALANCE_THRESHOLD = 5; // $5
+
+    // Only check once per day
+    const shouldCheckBalance = !user.lastBalanceNotificationAt || 
+      (new Date().getTime() - new Date(user.lastBalanceNotificationAt).getTime()) > 24 * 60 * 60 * 1000;
+
+    if (shouldCheckBalance && user.creditBalance !== null) {
+      const balance = parseFloat(user.creditBalance.toString());
+
+      if (balance <= CRITICAL_BALANCE_THRESHOLD && !user.lowBalanceNotificationSent) {
+        await storage.createNotification({
+          userId: user.id,
+          type: 'critical_balance',
+          message: `Your credit balance is critically low (${balance.toFixed(2)}). Please add credits to avoid service interruption.`,
+          read: false,
+        });
+
+        await storage.updateUser(user.id, {
+          lowBalanceNotificationSent: true,
+          lastBalanceNotificationAt: new Date(),
+        });
+      } else if (balance <= LOW_BALANCE_THRESHOLD && !user.lowBalanceNotificationSent) {
+        await storage.createNotification({
+          userId: user.id,
+          type: 'low_balance',
+          message: `Your credit balance is running low (${balance.toFixed(2)}). Consider adding more credits soon.`,
+          read: false,
+        });
+
+        await storage.updateUser(user.id, {
+          lowBalanceNotificationSent: true,
+          lastBalanceNotificationAt: new Date(),
+        });
+      } else if (balance > LOW_BALANCE_THRESHOLD && user.lowBalanceNotificationSent) {
+        // Reset notification flag when balance is restored
+        await storage.updateUser(user.id, {
+          lowBalanceNotificationSent: false,
+          lastBalanceNotificationAt: null,
+        });
+      }
+    }
+
+    next();
+  });
+
+
   // Missed Calls
   app.get("/api/missed-calls", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
@@ -243,6 +297,26 @@ export function registerRoutes(app: Express): Server {
       });
     }
   });
+
+  // Notifications
+  app.get("/api/notifications", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const notifications = await storage.getNotificationsByUserId(req.user.id);
+    res.json(notifications);
+  });
+
+  app.post("/api/notifications/:id/read", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    const notification = await storage.getNotification(parseInt(req.params.id));
+    if (!notification || notification.userId !== req.user.id) {
+      return res.sendStatus(404);
+    }
+
+    await storage.updateNotification(notification.id, { read: true });
+    res.sendStatus(200);
+  });
+
 
   const httpServer = createServer(app);
   return httpServer;

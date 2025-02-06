@@ -2,11 +2,14 @@ import twilio from "twilio";
 import { storage } from "./storage";
 import { MissedCall } from "@shared/schema";
 
-// Initialize Twilio client with environment variables
+// Initialize Twilio client with environment variables for central account
 const twilioClient = twilio(
   process.env.TWILIO_ACCOUNT_SID!,
   process.env.TWILIO_AUTH_TOKEN!
 );
+
+// Central Twilio phone number for sending messages
+const CENTRAL_TWILIO_NUMBER = process.env.TWILIO_PHONE_NUMBER!;
 
 export async function handleMissedCall(
   userId: number,
@@ -30,22 +33,31 @@ export async function handleMissedCall(
 
     console.log("Created missed call record:", missedCall);
 
-    // Get user's Twilio settings
+    // Get user's settings
     const user = await storage.getUser(userId);
-    if (!user?.autoResponseMessage || !user.twilioPhoneNumber || !user.twilioAccountSid || !user.twilioAuthToken) {
-      console.log("User missing required Twilio settings:", userId);
+    if (!user?.autoResponseMessage) {
+      console.log("User has no auto-response message configured:", userId);
       return missedCall;
     }
 
     try {
-      // Send auto-response SMS
+      // Send auto-response SMS using central Twilio account
       const message = await twilioClient.messages.create({
         body: user.autoResponseMessage,
         to: callData.from,
-        from: user.twilioPhoneNumber,
+        from: CENTRAL_TWILIO_NUMBER,
       });
 
       console.log("Sent auto-response message:", message.sid);
+
+      // Track message usage for billing
+      await storage.trackMessageUsage({
+        userId,
+        messageId: message.sid,
+        direction: 'outbound',
+        timestamp: new Date(),
+        status: 'sent'
+      });
 
       // Update missed call record to mark as responded
       const updatedCall = await storage.updateMissedCall(missedCall.id, {
@@ -74,14 +86,23 @@ export async function sendScheduledMessage(
     }
 
     const user = await storage.getUser(userId);
-    if (!user?.twilioPhoneNumber) {
+    if (!user) {
       return false;
     }
 
-    await twilioClient.messages.create({
+    const twilioMessage = await twilioClient.messages.create({
       body: message.message,
       to: message.recipientNumber,
-      from: user.twilioPhoneNumber,
+      from: CENTRAL_TWILIO_NUMBER,
+    });
+
+    // Track message usage for billing
+    await storage.trackMessageUsage({
+      userId,
+      messageId: twilioMessage.sid,
+      direction: 'outbound',
+      timestamp: new Date(),
+      status: 'sent'
     });
 
     await storage.updateScheduledMessage(messageId, { sent: true });

@@ -111,22 +111,21 @@ export function registerRoutes(app: Express): Server {
       delivered: false,
     });
 
-    // Send the message via Twilio
+    // Send the message via central Twilio account
     try {
-      const user = await storage.getUser(req.user.id);
-      if (!user?.twilioPhoneNumber) {
-        throw new Error("Twilio phone number not configured");
-      }
-
-      const twilioClient = twilio(
-        process.env.TWILIO_ACCOUNT_SID!,
-        process.env.TWILIO_AUTH_TOKEN!
-      );
-
-      await twilioClient.messages.create({
+      const twilioMessage = await twilioClient.messages.create({
         body: message.content,
         to: conversation.phoneNumber,
-        from: user.twilioPhoneNumber,
+        from: process.env.TWILIO_PHONE_NUMBER!,
+      });
+
+      // Track message usage for billing
+      await storage.trackMessageUsage({
+        userId: req.user.id,
+        messageId: twilioMessage.sid,
+        direction: 'outbound',
+        timestamp: new Date(),
+        status: 'sent'
       });
 
       // Mark the message as delivered
@@ -196,9 +195,7 @@ export function registerRoutes(app: Express): Server {
 
   // Settings
   const updateSettingsSchema = z.object({
-    twilioAccountSid: z.string().optional(),
-    twilioAuthToken: z.string().optional(),
-    twilioPhoneNumber: z.string().optional(),
+    phoneNumber: z.string().min(1, "Phone number is required"),
     autoResponseMessage: z.string().optional(),
   });
 
@@ -207,16 +204,12 @@ export function registerRoutes(app: Express): Server {
 
     const data = updateSettingsSchema.parse(req.body);
 
-    // Validate Twilio credentials if provided
-    if (data.twilioAccountSid || data.twilioAuthToken) {
-      if (!data.twilioAccountSid || !data.twilioAuthToken || !data.twilioPhoneNumber) {
-        return res.status(400).json({
-          message: "All Twilio credentials (Account SID, Auth Token, and Phone Number) are required"
-        });
-      }
-    }
+    // Update user settings (phone number and auto-response message only)
+    const user = await storage.updateUser(req.user.id, {
+      twilioPhoneNumber: data.phoneNumber,
+      autoResponseMessage: data.autoResponseMessage,
+    });
 
-    const user = await storage.updateUser(req.user.id, data);
     res.json(user);
   });
 

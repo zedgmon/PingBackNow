@@ -43,9 +43,6 @@ export default function Landing() {
                 Start Free Trial
               </Button>
             </Link>
-            <Button size="lg" variant="outline" className="w-full sm:w-auto">
-              View Demo
-            </Button>
           </div>
         </div>
       </section>

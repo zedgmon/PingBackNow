@@ -16,9 +16,18 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { SiTwilio } from "react-icons/si";
+import { ExternalLink } from "lucide-react";
 
 const settingsSchema = z.object({
   twilioAccountSid: z.string().min(1, "Account SID is required"),
@@ -37,7 +46,8 @@ export default function Settings() {
       twilioAccountSid: user?.twilioAccountSid || "",
       twilioAuthToken: user?.twilioAuthToken || "",
       twilioPhoneNumber: user?.twilioPhoneNumber || "",
-      autoResponseMessage: user?.autoResponseMessage || "Hi! We missed your call. How can we help?",
+      autoResponseMessage:
+        user?.autoResponseMessage || "Hi! We missed your call. How can we help?",
     },
   });
 
@@ -69,9 +79,59 @@ export default function Settings() {
         <div className="grid gap-8">
           <Card>
             <CardHeader>
-              <CardTitle>Twilio Configuration</CardTitle>
+              <div className="flex items-center gap-2">
+                <SiTwilio className="w-6 h-6" />
+                <div>
+                  <CardTitle>Twilio Configuration</CardTitle>
+                  <CardDescription>
+                    Configure your business phone number and messaging settings
+                  </CardDescription>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
+              <Alert className="mb-6">
+                <AlertTitle>Using Your Existing Business Phone Number</AlertTitle>
+                <AlertDescription>
+                  <p className="mt-2">
+                    You can use your existing business phone number with our
+                    service. To get started:
+                  </p>
+                  <ol className="mt-2 list-decimal list-inside space-y-1">
+                    <li>
+                      Sign up for a Twilio account at{" "}
+                      <a
+                        href="https://www.twilio.com/try-twilio"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline inline-flex items-center"
+                      >
+                        twilio.com <ExternalLink className="w-3 h-3 ml-1" />
+                      </a>
+                    </li>
+                    <li>
+                      Start the porting process at{" "}
+                      <a
+                        href="https://www.twilio.com/console/phone-numbers/porting"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline inline-flex items-center"
+                      >
+                        Twilio Porting Center <ExternalLink className="w-3 h-3 ml-1" />
+                      </a>
+                    </li>
+                    <li>
+                      Once the port is complete, enter your credentials and phone
+                      number below
+                    </li>
+                  </ol>
+                  <p className="mt-2">
+                    The porting process typically takes 2-4 business days. Your
+                    existing service will continue to work during this time.
+                  </p>
+                </AlertDescription>
+              </Alert>
+
               <Form {...form}>
                 <form
                   onSubmit={form.handleSubmit((data) =>
@@ -89,7 +149,15 @@ export default function Settings() {
                           <Input {...field} placeholder="AC..." type="password" />
                         </FormControl>
                         <FormDescription>
-                          Find this in your Twilio dashboard under Account Info
+                          Find this in your{" "}
+                          <a
+                            href="https://www.twilio.com/console"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline inline-flex items-center"
+                          >
+                            Twilio Console <ExternalLink className="w-3 h-3 ml-1" />
+                          </a>
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -106,7 +174,7 @@ export default function Settings() {
                           <Input {...field} type="password" />
                         </FormControl>
                         <FormDescription>
-                          Your Twilio authentication token
+                          Your Twilio authentication token from the console
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -118,12 +186,13 @@ export default function Settings() {
                     name="twilioPhoneNumber"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Twilio Phone Number</FormLabel>
+                        <FormLabel>Business Phone Number</FormLabel>
                         <FormControl>
                           <Input {...field} placeholder="+1234567890" />
                         </FormControl>
                         <FormDescription>
-                          The phone number you purchased from Twilio
+                          Your business phone number that has been ported to Twilio
+                          (in E.164 format, e.g., +1234567890)
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -155,9 +224,7 @@ export default function Settings() {
                     type="submit"
                     disabled={updateSettingsMutation.isPending}
                   >
-                    {updateSettingsMutation.isPending
-                      ? "Saving..."
-                      : "Save Settings"}
+                    {updateSettingsMutation.isPending ? "Saving..." : "Save Settings"}
                   </Button>
                 </form>
               </Form>

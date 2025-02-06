@@ -2,6 +2,7 @@ import { IStorage } from "./types";
 import { User, InsertUser, MissedCall, ScheduledMessage, Lead } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
+import { GoogleSheetsService, initGoogleSheetsService, getGoogleSheetsService } from './google-sheets-service';
 
 const MemoryStore = createMemoryStore(session);
 
@@ -29,6 +30,8 @@ export interface IStorage {
   ): Promise<ScheduledMessage>;
   getAllUsers(): Promise<User[]>;
   sessionStore: session.Store;
+  initializeGoogleSheets(): Promise<string>;
+  syncLeadsToSheets(): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -129,6 +132,15 @@ export class MemStorage implements IStorage {
     const id = this.currentId++;
     const newLead = { ...lead, id };
     this.leads.set(id, newLead);
+
+    try {
+      const sheetsService = getGoogleSheetsService();
+      await sheetsService.addLead(newLead);
+    } catch (error) {
+      console.error('Error syncing new lead to Google Sheets:', error);
+      // Don't throw the error - we still want to save the lead locally
+    }
+
     return newLead;
   }
 
@@ -172,6 +184,32 @@ export class MemStorage implements IStorage {
 
   async getAllUsers(): Promise<User[]> {
     return Array.from(this.users.values());
+  }
+
+  async initializeGoogleSheets(): Promise<string> {
+    try {
+      const sheetsService = getGoogleSheetsService();
+      const spreadsheetId = await sheetsService.initializeSpreadsheet();
+      return spreadsheetId;
+    } catch (error) {
+      console.error('Error initializing Google Sheets:', error);
+      throw error;
+    }
+  }
+
+  async syncLeadsToSheets(): Promise<void> {
+    try {
+      const sheetsService = getGoogleSheetsService();
+      const leads = await this.getAllLeads();
+      await sheetsService.syncLeads(leads);
+    } catch (error) {
+      console.error('Error syncing leads to Google Sheets:', error);
+      throw error;
+    }
+  }
+
+  async getAllLeads(): Promise<Lead[]> {
+    return Array.from(this.leads.values());
   }
 }
 

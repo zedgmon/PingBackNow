@@ -5,8 +5,20 @@ import { storage } from "./storage";
 import { insertLeadSchema, insertScheduledMessageSchema } from "@shared/schema";
 import { handleMissedCall } from "./twilio-service";
 import { z } from "zod";
+import { initGoogleSheetsService } from './google-sheets-service';
 
 export function registerRoutes(app: Express): Server {
+  // Initialize Google Sheets service with credentials
+  if (process.env.GOOGLE_SHEETS_CREDENTIALS) {
+    try {
+      const credentials = JSON.parse(process.env.GOOGLE_SHEETS_CREDENTIALS);
+      initGoogleSheetsService(credentials);
+      console.log('Google Sheets service initialized successfully');
+    } catch (error) {
+      console.error('Error initializing Google Sheets service:', error);
+    }
+  }
+
   setupAuth(app);
 
   // Missed Calls
@@ -107,6 +119,37 @@ export function registerRoutes(app: Express): Server {
 
     const user = await storage.updateUser(req.user.id, data);
     res.json(user);
+  });
+
+  // Add new routes for Google Sheets
+  app.post('/api/sheets/initialize', async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    try {
+      const spreadsheetId = await storage.initializeGoogleSheets();
+      res.json({ spreadsheetId });
+    } catch (error) {
+      console.error('Error initializing Google Sheets:', error);
+      res.status(500).json({ 
+        message: 'Failed to initialize Google Sheets',
+        error: error.message 
+      });
+    }
+  });
+
+  app.post('/api/sheets/sync', async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    try {
+      await storage.syncLeadsToSheets();
+      res.sendStatus(200);
+    } catch (error) {
+      console.error('Error syncing leads to Google Sheets:', error);
+      res.status(500).json({ 
+        message: 'Failed to sync leads to Google Sheets',
+        error: error.message 
+      });
+    }
   });
 
   const httpServer = createServer(app);

@@ -37,13 +37,25 @@ export function registerRoutes(app: Express): Server {
 
   app.post("/api/scheduled-messages", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const data = insertScheduledMessageSchema.parse(req.body);
-    const message = await storage.createScheduledMessage({
-      ...data,
-      userId: req.user.id,
-      sent: false,
-    });
-    res.status(201).json(message);
+    try {
+      const parsedData = insertScheduledMessageSchema.omit({ userId: true }).parse({
+        ...req.body,
+        scheduledTime: new Date(req.body.scheduledTime),
+      });
+
+      const message = await storage.createScheduledMessage({
+        ...parsedData,
+        userId: req.user.id,
+        sent: false,
+      });
+      res.status(201).json(message);
+    } catch (error) {
+      console.error('Error creating scheduled message:', error);
+      res.status(400).json({ 
+        message: 'Invalid message data',
+        error: error.message 
+      });
+    }
   });
 
   // Leads

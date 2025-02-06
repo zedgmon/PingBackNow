@@ -17,6 +17,7 @@ import Billing from "@/pages/billing";
 function Router() {
   return (
     <Switch>
+      <Route path="/auth" component={AuthPage} />
       <ProtectedRoute path="/" component={Dashboard} />
       <ProtectedRoute path="/missed-calls" component={MissedCalls} />
       <ProtectedRoute path="/conversations" component={Conversations} />
@@ -24,7 +25,6 @@ function Router() {
       <ProtectedRoute path="/leads" component={Leads} />
       <ProtectedRoute path="/settings" component={Settings} />
       <ProtectedRoute path="/billing" component={Billing} />
-      <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>
   );

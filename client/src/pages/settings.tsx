@@ -27,6 +27,7 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { SiTwilio } from "react-icons/si";
+import { ExternalLink } from "lucide-react";
 
 const settingsSchema = z.object({
   phoneNumber: z.string().min(1, "Phone number is required"),

@@ -19,6 +19,8 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Landing} />
+      <Route path="/login" component={() => <AuthPage defaultTab="login" />} />
+      <Route path="/register" component={() => <AuthPage defaultTab="register" />} />
       <ProtectedRoute path="/dashboard" component={Dashboard} />
       <ProtectedRoute path="/missed-calls" component={MissedCalls} />
       <ProtectedRoute path="/conversations" component={Conversations} />

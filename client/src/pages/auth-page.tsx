@@ -24,14 +24,18 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PhoneCall } from "lucide-react";
 
-export default function AuthPage() {
+interface AuthPageProps {
+  defaultTab?: "login" | "register";
+}
+
+export default function AuthPage({ defaultTab = "login" }: AuthPageProps) {
   const { user, loginMutation, registerMutation } = useAuth();
   const [, navigate] = useLocation();
 
   // Redirect if logged in
   useEffect(() => {
     if (user) {
-      navigate("/");
+      navigate("/dashboard");
     }
   }, [user, navigate]);
 
@@ -83,7 +87,7 @@ export default function AuthPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Tabs defaultValue="login">
+              <Tabs defaultValue={defaultTab}>
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="login">Login</TabsTrigger>
                   <TabsTrigger value="register">Register</TabsTrigger>

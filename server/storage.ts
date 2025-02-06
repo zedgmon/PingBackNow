@@ -47,6 +47,21 @@ export class MemStorage implements IStorage {
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000,
     });
+
+    // Initialize with a test user that has Twilio credentials
+    const testUser: User = {
+      id: this.currentId++,
+      username: "test",
+      password: "1edf06fcef65bd2d8ac24b3f04e026448577dc06e44f6a7ea5d3fc2e1f39f890.3b06d6e0ab4589b8799e168332f5813b", // "password"
+      businessName: "Test Business",
+      twilioAccountSid: process.env.TWILIO_ACCOUNT_SID || null,
+      twilioAuthToken: process.env.TWILIO_AUTH_TOKEN || null,
+      twilioPhoneNumber: "+1234567890",
+      autoResponseMessage: "Hi! We missed your call. How can we help?",
+      subscriptionPlan: null,
+      stripeCustomerId: null,
+    };
+    this.users.set(testUser.id, testUser);
   }
 
   async getUser(id: number): Promise<User | undefined> {

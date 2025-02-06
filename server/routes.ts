@@ -53,23 +53,31 @@ export function registerRoutes(app: Express): Server {
 
   // Twilio Webhook for Missed Calls
   app.post("/api/twilio/call-status", async (req, res) => {
+    console.log("Received call status webhook:", req.body);
     const callStatus = req.body.CallStatus;
     const to = req.body.To;
     const from = req.body.From;
     const callerName = req.body.CallerName;
 
-    if (callStatus !== "completed") {
+    // Handle missed calls: no-answer, busy, failed, canceled
+    if (["no-answer", "busy", "failed", "canceled"].includes(callStatus)) {
+      console.log("Processing missed call for status:", callStatus);
       // Find user by Twilio phone number
       const users = await storage.getAllUsers();
       const user = users.find(u => u.twilioPhoneNumber === to);
 
       if (user) {
+        console.log("Found user for phone number:", to);
         await handleMissedCall(user.id, {
           from,
           to,
           callerName,
         });
+      } else {
+        console.log("No user found for phone number:", to);
       }
+    } else {
+      console.log("Ignoring call status:", callStatus);
     }
 
     res.sendStatus(200);

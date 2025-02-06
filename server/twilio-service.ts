@@ -16,39 +16,50 @@ export async function handleMissedCall(
     callerName?: string;
   }
 ): Promise<MissedCall> {
-  // Create missed call record
-  const missedCall = await storage.createMissedCall({
-    userId,
-    callerNumber: callData.from,
-    callerName: callData.callerName || null,
-    timestamp: new Date(),
-    responded: false,
-  });
-
-  // Get user's Twilio settings
-  const user = await storage.getUser(userId);
-  if (!user?.autoResponseMessage) {
-    console.log(`No auto-response message set for user ${userId}`);
-    return missedCall;
-  }
+  console.log("Handling missed call for user:", userId, "call data:", callData);
 
   try {
-    // Send auto-response SMS
-    await twilioClient.messages.create({
-      body: user.autoResponseMessage,
-      to: callData.from,
-      from: user.twilioPhoneNumber!,
+    // Create missed call record
+    const missedCall = await storage.createMissedCall({
+      userId,
+      callerNumber: callData.from,
+      callerName: callData.callerName || null,
+      timestamp: new Date(),
+      responded: false,
     });
 
-    // Update missed call record to mark as responded
-    const updatedCall = await storage.updateMissedCall(missedCall.id, {
-      responded: true,
-    });
+    console.log("Created missed call record:", missedCall);
 
-    return updatedCall;
+    // Get user's Twilio settings
+    const user = await storage.getUser(userId);
+    if (!user?.autoResponseMessage || !user.twilioPhoneNumber || !user.twilioAccountSid || !user.twilioAuthToken) {
+      console.log("User missing required Twilio settings:", userId);
+      return missedCall;
+    }
+
+    try {
+      // Send auto-response SMS
+      const message = await twilioClient.messages.create({
+        body: user.autoResponseMessage,
+        to: callData.from,
+        from: user.twilioPhoneNumber,
+      });
+
+      console.log("Sent auto-response message:", message.sid);
+
+      // Update missed call record to mark as responded
+      const updatedCall = await storage.updateMissedCall(missedCall.id, {
+        responded: true,
+      });
+
+      return updatedCall;
+    } catch (error) {
+      console.error("Error sending auto-response SMS:", error);
+      return missedCall;
+    }
   } catch (error) {
-    console.error("Error sending auto-response SMS:", error);
-    return missedCall;
+    console.error("Error handling missed call:", error);
+    throw error;
   }
 }
 

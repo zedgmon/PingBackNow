@@ -18,7 +18,7 @@ import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 const navigation = [
-  { name: "Dashboard", href: "/", icon: Home },
+  { name: "Dashboard", href: "/dashboard", icon: Home },
   { name: "Missed Calls", href: "/missed-calls", icon: Phone },
   { name: "Conversations", href: "/conversations", icon: MessageCircle },
   { name: "Scheduled Messages", href: "/scheduled", icon: CalendarDays },

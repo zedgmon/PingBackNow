@@ -10,12 +10,8 @@ import {
   CreditCard,
   LogOut,
   MessageCircle,
-  Menu,
-  X,
   Home,
 } from "lucide-react";
-import { useState } from "react";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
@@ -30,7 +26,6 @@ const navigation = [
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user, logoutMutation } = useAuth();
-  const [open, setOpen] = useState(false);
 
   const NavContent = () => (
     <nav className="flex flex-1 flex-col">
@@ -48,7 +43,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                         : "text-muted-foreground hover:bg-primary/10 hover:text-primary",
                       "w-full justify-start gap-x-3"
                     )}
-                    onClick={() => setOpen(false)}
                   >
                     <item.icon className="h-5 w-5" aria-hidden="true" />
                     {item.name}
@@ -66,10 +60,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           <Button
             variant="ghost"
             className="w-full justify-start px-2"
-            onClick={() => {
-              logoutMutation.mutate();
-              setOpen(false);
-            }}
+            onClick={() => logoutMutation.mutate()}
           >
             <LogOut className="mr-2 h-4 w-4" />
             Logout
@@ -80,40 +71,21 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Mobile Navigation */}
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetTrigger asChild>
-          <Button
-            variant="ghost"
-            className="lg:hidden fixed top-4 left-4 z-50"
-            size="icon"
-          >
-            <Menu className="h-6 w-6" />
-            <span className="sr-only">Open navigation menu</span>
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="left" className="w-72 p-6">
-          <div className="mb-8">
-            <h1 className="text-xl font-semibold">Business Auto-Responder</h1>
-          </div>
-          <NavContent />
-        </SheetContent>
-      </Sheet>
-
-      {/* Desktop Navigation */}
-      <div className="hidden lg:fixed lg:inset-y-0 lg:z-10 lg:flex lg:w-72 lg:flex-col">
-        <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r bg-card px-6 pb-4">
-          <div className="flex h-16 shrink-0 items-center">
-            <h1 className="text-xl font-semibold">Business Auto-Responder</h1>
-          </div>
+    <div className="min-h-screen bg-background flex">
+      {/* Sidebar - Always visible */}
+      <div className="w-64 flex-shrink-0 border-r bg-card">
+        <div className="flex h-16 shrink-0 items-center px-6">
+          <h1 className="text-lg font-semibold">Business Auto-Responder</h1>
+        </div>
+        <div className="flex flex-col gap-y-5 px-6 pb-4">
           <NavContent />
         </div>
       </div>
 
-      <main className="lg:pl-72">
-        <div className="px-4 py-10 sm:px-6 lg:px-8">{children}</div>
-      </main>
+      {/* Main content */}
+      <div className="flex-1">
+        <div className="px-8 py-10">{children}</div>
+      </div>
     </div>
   );
 }

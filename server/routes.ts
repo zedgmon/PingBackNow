@@ -2,7 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
-import { insertLeadSchema, insertScheduledMessageSchema, adminStatsSchema, adminCustomerSchema } from "@shared/schema";
+import { insertLeadSchema, insertScheduledMessageSchema } from "@shared/schema";
 import { handleMissedCall } from "./twilio-service";
 import { z } from "zod";
 import { initGoogleSheetsService, getGoogleSheetsService } from './google-sheets-service';
@@ -29,6 +29,11 @@ export function registerRoutes(app: Express): Server {
   }
 
   setupAuth(app);
+
+  // Basic health check endpoint
+  app.get("/api/health", (_req: Request, res: Response) => {
+    res.json({ status: "healthy" });
+  });
 
   // Add the check balance middleware
   app.use(async (req: Request, res: Response, next: NextFunction) => {
@@ -82,7 +87,6 @@ export function registerRoutes(app: Express): Server {
 
     next();
   });
-
 
   // Missed Calls
   app.get("/api/missed-calls", async (req: Request, res: Response) => {
@@ -399,66 +403,6 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Admin specific routes
-  const isAdmin = (req: Request, res: Response, next: NextFunction) => {
-    if (!req.isAuthenticated() || !req.user.isAdmin) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    next();
-  };
-
-  app.get("/api/admin/stats", isAdmin, async (req: Request, res: Response) => {
-    try {
-      const users = await storage.getAllUsers();
-      const now = new Date();
-      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-      // Calculate total SMS sent this month from message usage
-      const stats = {
-        activeCustomers: users.filter(u => !u.isAdmin).length,
-        newCustomersThisMonth: users.filter(u => !u.isAdmin && u.lastBalanceNotificationAt && u.lastBalanceNotificationAt >= firstDayOfMonth).length,
-        totalSmsSent: 0, // Will be calculated from messageUsage
-        monthlyRevenue: 0,
-        revenueGrowth: 0,
-      };
-
-      const validatedStats = adminStatsSchema.parse(stats);
-      res.json(validatedStats);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ message: "Invalid stats format", errors: error.errors });
-      } else {
-        console.error("Error fetching admin stats:", error);
-        res.status(500).json({ message: "Failed to fetch admin stats", error: error instanceof Error ? error.message : 'An unknown error occurred' });
-      }
-    }
-  });
-
-  app.get("/api/admin/top-customers", isAdmin, async (req: Request, res: Response) => {
-    try {
-      const users = await storage.getAllUsers();
-      const topCustomers = users
-        .filter(user => !user.isAdmin)
-        .map(user => ({
-          id: user.id,
-          businessName: user.businessName,
-          subscriptionPlan: user.subscriptionPlan || 'Free',
-          smsSent: 0, // Will be calculated from messageUsage
-          creditBalance: parseFloat(user.creditBalance?.toString() || '0'),
-        }))
-        .slice(0, 5);
-
-      const validatedCustomers = z.array(adminCustomerSchema).parse(topCustomers);
-      res.json(validatedCustomers);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ message: "Invalid customer data format", errors: error.errors });
-      } else {
-        console.error("Error fetching top customers:", error);
-        res.status(500).json({ message: "Failed to fetch top customers", error: error instanceof Error ? error.message : 'An unknown error occurred' });
-      }
-    }
-  });
 
   const httpServer = createServer(app);
   return httpServer;

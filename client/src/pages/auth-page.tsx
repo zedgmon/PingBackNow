@@ -63,7 +63,7 @@ export default function AuthPage({ defaultTab = "login" }: AuthPageProps) {
           {/* Hero Section */}
           <div className="flex flex-col justify-center space-y-6">
             <div className="flex items-center gap-2 text-primary">
-              <Logo className="h-20 w-auto" />
+              <Logo className="h-32 w-auto" />
             </div>
             <p className="text-lg text-gray-600">
               Never miss another customer again. Automatically respond to missed calls,

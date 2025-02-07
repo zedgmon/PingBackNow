@@ -235,27 +235,39 @@ export default function Landing() {
               {
                 name: "Starter",
                 price: "$49",
-                description: "Best For: Small businesses with low call volume that want to stay responsive to missed calls.",
+                description: "A great starting point for businesses exploring automated follow-ups.",
                 messages: "500",
                 extraSMS: "$0.05",
-                features: ["Auto-response system", "Basic dashboard", "Lead capture", "Email support"],
+                features: [
+                  "Low call volume",
+                  "Businesses that want basic auto-replies for missed calls",
+                  "Those testing out SMS follow-ups before scaling"
+                ],
               },
               {
                 name: "Growth",
                 price: "$99",
-                description: "Best For: Growing businesses that frequently miss calls and want to recover more customers.",
+                description: "The best balance of affordability and lead recovery for growing businesses.",
                 messages: "1,500",
                 extraSMS: "$0.04",
                 popular: true,
-                features: ["Advanced auto-responses", "Lead management", "Analytics dashboard", "Priority support"],
+                features: [
+                  "Frequently miss calls",
+                  "Companies looking to recover more leads via SMS",
+                  "Businesses that want a cost-effective balance of volume & price"
+                ],
               },
               {
                 name: "Pro",
                 price: "$199",
-                description: "Best For: High-volume businesses that miss a lot of calls and need automated follow-ups at scale.",
+                description: "A high-volume solution to maximize engagement and never miss a lead.",
                 messages: "5,000",
                 extraSMS: "$0.03",
-                features: ["Enterprise auto-responses", "Advanced automation", "Custom integrations", "Dedicated support"],
+                features: [
+                  "That miss a lot of calls",
+                  "Companies with multiple locations or high customer inquiries",
+                  "Businesses that want a seamless, automated follow-up system to maximize customer engagement"
+                ],
               },
             ].map((plan) => (
               <Card key={plan.name} className={`relative transition-all duration-200 hover:shadow-lg ${plan.popular ? 'border-primary shadow-md scale-105' : ''}`}>

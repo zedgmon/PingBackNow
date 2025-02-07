@@ -7,7 +7,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { MessageCircle, Phone, CalendarDays, Users } from "lucide-react";
+import { MessageCircle, Phone, CalendarDays, Users, Calculator, DollarSign, Percent } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useForm } from "react-hook-form";
 
 export default function Landing() {
   return (
@@ -84,6 +87,139 @@ export default function Landing() {
                 </CardHeader>
               </Card>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ROI Calculator Section */}
+      <section className="py-16 bg-background">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center mb-6">
+            Calculate Your Potential Revenue
+          </h2>
+          <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
+            See how much revenue you could recover by converting missed calls into leads
+          </p>
+
+          <div className="max-w-3xl mx-auto">
+            <Card className="p-6">
+              <CardContent className="space-y-8 pt-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="missedCalls">Monthly Missed Calls</Label>
+                    <div className="relative">
+                      <Input
+                        id="missedCalls"
+                        type="number"
+                        placeholder="e.g., 100"
+                        className="pl-10"
+                        onChange={(e) => {
+                          const calls = parseInt(e.target.value) || 0;
+                          const value = parseFloat(document.getElementById('customerValue')?.value || '0');
+                          const margin = parseFloat(document.getElementById('profitMargin')?.value || '0');
+
+                          const conversionRate = 0.20; // 20% default conversion rate
+                          const recoveredCustomers = Math.round(calls * conversionRate);
+                          const additionalRevenue = recoveredCustomers * value;
+                          const additionalProfit = additionalRevenue * (margin / 100);
+
+                          document.getElementById('recoveredCustomers').textContent = recoveredCustomers.toString();
+                          document.getElementById('additionalRevenue').textContent = `$${additionalRevenue.toLocaleString()}`;
+                          document.getElementById('additionalProfit').textContent = `$${Math.round(additionalProfit).toLocaleString()}`;
+                        }}
+                      />
+                      <Calculator className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="customerValue">Average Customer Value ($)</Label>
+                    <div className="relative">
+                      <Input
+                        id="customerValue"
+                        type="number"
+                        placeholder="e.g., 200"
+                        className="pl-10"
+                        onChange={(e) => {
+                          const calls = parseInt(document.getElementById('missedCalls')?.value || '0');
+                          const value = parseFloat(e.target.value) || 0;
+                          const margin = parseFloat(document.getElementById('profitMargin')?.value || '0');
+
+                          const conversionRate = 0.20;
+                          const recoveredCustomers = Math.round(calls * conversionRate);
+                          const additionalRevenue = recoveredCustomers * value;
+                          const additionalProfit = additionalRevenue * (margin / 100);
+
+                          document.getElementById('recoveredCustomers').textContent = recoveredCustomers.toString();
+                          document.getElementById('additionalRevenue').textContent = `$${additionalRevenue.toLocaleString()}`;
+                          document.getElementById('additionalProfit').textContent = `$${Math.round(additionalProfit).toLocaleString()}`;
+                        }}
+                      />
+                      <DollarSign className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="profitMargin">Profit Margin (%)</Label>
+                    <div className="relative">
+                      <Input
+                        id="profitMargin"
+                        type="number"
+                        placeholder="e.g., 30"
+                        className="pl-10"
+                        onChange={(e) => {
+                          const calls = parseInt(document.getElementById('missedCalls')?.value || '0');
+                          const value = parseFloat(document.getElementById('customerValue')?.value || '0');
+                          const margin = parseFloat(e.target.value) || 0;
+
+                          const conversionRate = 0.20;
+                          const recoveredCustomers = Math.round(calls * conversionRate);
+                          const additionalRevenue = recoveredCustomers * value;
+                          const additionalProfit = additionalRevenue * (margin / 100);
+
+                          document.getElementById('recoveredCustomers').textContent = recoveredCustomers.toString();
+                          document.getElementById('additionalRevenue').textContent = `$${additionalRevenue.toLocaleString()}`;
+                          document.getElementById('additionalProfit').textContent = `$${Math.round(additionalProfit).toLocaleString()}`;
+                        }}
+                      />
+                      <Percent className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6">
+                  <Card className="border-2 border-primary/20">
+                    <CardHeader>
+                      <CardTitle className="text-lg">Recovered Customers</CardTitle>
+                      <CardDescription>Monthly potential</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-3xl font-bold" id="recoveredCustomers">0</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-2 border-primary/20">
+                    <CardHeader>
+                      <CardTitle className="text-lg">Additional Revenue</CardTitle>
+                      <CardDescription>Monthly potential</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-3xl font-bold" id="additionalRevenue">$0</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-2 border-primary/20">
+                    <CardHeader>
+                      <CardTitle className="text-lg">Additional Profit</CardTitle>
+                      <CardDescription>Monthly potential</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-3xl font-bold" id="additionalProfit">$0</p>
+                    </CardContent>
+                  </Card>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>

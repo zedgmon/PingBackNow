@@ -21,7 +21,7 @@ export function ProtectedAdminRoute({
     );
   }
 
-  if (!user || !user.isAdmin) {
+  if (!user) {
     return (
       <Route path={path}>
         <Redirect to="/auth" />

@@ -2,14 +2,12 @@ import { pgTable, text, serial, integer, timestamp, boolean, decimal } from "dri
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
-import type { InferSelectModel } from "drizzle-orm";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   businessName: text("business_name").notNull(),
-  isAdmin: boolean("is_admin").notNull().default(false),
   twilioAccountSid: text("twilio_account_sid"),
   twilioAuthToken: text("twilio_auth_token"),
   twilioPhoneNumber: text("twilio_phone_number"),

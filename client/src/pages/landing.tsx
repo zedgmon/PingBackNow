@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { MessageCircle, Phone, CalendarDays, Users, Calculator, DollarSign, Percent, Check } from "lucide-react";
+import { MessageCircle, Phone, CalendarDays, Users, Calculator, DollarSign, Percent, Check, PhoneOff, ArrowUpRight, MessageSquare } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useForm } from "react-hook-form";
@@ -317,6 +317,91 @@ export default function Landing() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Impact Stats Section */}
+      <section className="py-16 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center mb-4">
+            Missed Calls = Missed Revenue. Here's the Impact on Your Business.
+          </h2>
+          <p className="text-lg text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
+            Most businesses don't realize how much revenue they lose to unanswered calls. With automated SMS follow-ups, you turn missed calls into paying customers—effortlessly.
+          </p>
+          
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            <Card className="text-center">
+              <CardHeader>
+                <PhoneOff className="w-12 h-12 mx-auto text-primary mb-4" />
+                <CardTitle className="text-2xl">42%</CardTitle>
+                <CardDescription className="text-base">
+                  of missed calls never get a callback — Customers go to competitors
+                </CardDescription>
+              </CardHeader>
+            </Card>
+            
+            <Card className="text-center">
+              <CardHeader>
+                <ArrowUpRight className="w-12 h-12 mx-auto text-primary mb-4" />
+                <CardTitle className="text-2xl">20%+</CardTitle>
+                <CardDescription className="text-base">
+                  conversion rate — A simple text after a missed call recaptures lost leads
+                </CardDescription>
+              </CardHeader>
+            </Card>
+            
+            <Card className="text-center">
+              <CardHeader>
+                <DollarSign className="w-12 h-12 mx-auto text-primary mb-4" />
+                <CardTitle className="text-2xl">High ROI</CardTitle>
+                <CardDescription className="text-base">
+                  Recovering just a few missed calls per month can cover the cost of the service
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works Section */}
+      <section className="py-16">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center mb-4">
+            Get Started in Minutes—No Complicated Setup
+          </h2>
+          <p className="text-lg text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
+            You don't need extra software or complicated integrations. Just sign up, get your number, and start saving lost leads today.
+          </p>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            <Card className="relative">
+              <div className="absolute -top-4 left-4 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">1</div>
+              <CardHeader>
+                <Phone className="w-12 h-12 text-primary mb-4" />
+                <CardTitle>Connect Your Business Number</CardTitle>
+                <CardDescription>We handle the rest</CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card className="relative">
+              <div className="absolute -top-4 left-4 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">2</div>
+              <CardHeader>
+                <MessageSquare className="w-12 h-12 text-primary mb-4" />
+                <CardTitle>Miss a Call? We Auto-Reply</CardTitle>
+                <CardDescription>Customers receive a text instantly</CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card className="relative">
+              <div className="absolute -top-4 left-4 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">3</div>
+              <CardHeader>
+                <Users className="w-12 h-12 text-primary mb-4" />
+                <CardTitle>Recover More Customers</CardTitle>
+                <CardDescription>Simple SMS follow-ups bring them back</CardDescription>
+              </CardHeader>
+            </Card>
           </div>
         </div>
       </section>

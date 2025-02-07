@@ -35,10 +35,17 @@ router.post('/create', async (req, res) => {
       paymentMethodId
     );
 
-    res.json(subscription);
+    // Return a proper JSON response
+    res.json({
+      subscriptionId: subscription.id,
+      status: subscription.status,
+      clientSecret: subscription.latest_invoice?.payment_intent?.client_secret
+    });
   } catch (error) {
     console.error('Error creating subscription:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ 
+      error: error instanceof Error ? error.message : 'Failed to create subscription'
+    });
   }
 });
 
@@ -52,10 +59,15 @@ router.post('/cancel', async (req, res) => {
     }
 
     const subscription = await StripeService.cancelSubscription(userId);
-    res.json(subscription);
+    res.json({
+      status: subscription.status,
+      canceledAt: subscription.canceled_at
+    });
   } catch (error) {
     console.error('Error canceling subscription:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ 
+      error: error instanceof Error ? error.message : 'Failed to cancel subscription'
+    });
   }
 });
 
@@ -64,15 +76,17 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
   try {
     const sig = req.headers['stripe-signature'];
 
-    if (!sig) {
-      return res.status(400).json({ error: 'No signature provided' });
+    if (!sig || Array.isArray(sig)) {
+      return res.status(400).json({ error: 'Invalid signature' });
     }
 
     const result = await StripeService.handleWebhook(req.body, sig);
     res.json(result);
   } catch (error) {
     console.error('Webhook error:', error);
-    res.status(400).json({ error: error.message });
+    res.status(400).json({ 
+      error: error instanceof Error ? error.message : 'Webhook Error'
+    });
   }
 });
 

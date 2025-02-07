@@ -15,6 +15,10 @@ import { Check, CreditCard } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { CreditUsageChart } from "@/components/credit-usage-chart";
+import { loadStripe } from "@stripe/stripe-js";
+
+// Initialize Stripe
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 const plans = [
   {
@@ -28,6 +32,7 @@ const plans = [
       "Email support",
     ],
     priceId: "starter",
+    stripePriceId: "price_starter", // Add your Stripe price ID here
   },
   {
     name: "Growth",
@@ -41,6 +46,7 @@ const plans = [
       "Custom auto-response messages",
     ],
     priceId: "growth",
+    stripePriceId: "price_growth", // Add your Stripe price ID here
   },
   {
     name: "Pro",
@@ -55,6 +61,7 @@ const plans = [
       "Dedicated account manager",
     ],
     priceId: "pro",
+    stripePriceId: "price_pro", // Add your Stripe price ID here
   },
 ];
 
@@ -63,12 +70,33 @@ export default function Billing() {
   const { toast } = useToast();
 
   const subscribeMutation = useMutation({
-    mutationFn: async (priceId: string) => {
-      const res = await apiRequest("POST", "/api/subscribe", { priceId });
-      return res.json();
+    mutationFn: async (planId: string) => {
+      const stripe = await stripePromise;
+      if (!stripe) throw new Error('Stripe failed to initialize');
+
+      // Create subscription
+      const response = await apiRequest("POST", "/api/subscribe/create", { planId });
+      const data = await response.json();
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      // If we have a client secret, handle the payment
+      if (data.clientSecret) {
+        const { error } = await stripe.confirmCardPayment(data.clientSecret);
+        if (error) {
+          throw new Error(error.message);
+        }
+      }
+
+      return data;
     },
-    onSuccess: (data) => {
-      window.location.href = data.url;
+    onSuccess: () => {
+      toast({
+        title: "Subscription created",
+        description: "Your subscription has been created successfully.",
+      });
     },
     onError: (error: Error) => {
       toast({
@@ -117,7 +145,7 @@ export default function Billing() {
           </Card>
         )}
 
-        <div className="grid gap-8 md:grid-cols-2">
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
           {plans.map((plan) => (
             <Card key={plan.name}>
               <CardHeader>
@@ -141,7 +169,7 @@ export default function Billing() {
               <CardFooter>
                 <Button
                   className="w-full"
-                  onClick={() => subscribeMutation.mutate(plan.priceId)}
+                  onClick={() => subscribeMutation.mutate(plan.stripePriceId)}
                   disabled={
                     subscribeMutation.isPending ||
                     user?.subscriptionPlan === plan.priceId

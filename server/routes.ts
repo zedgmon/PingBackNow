@@ -317,6 +317,44 @@ export function registerRoutes(app: Express): Server {
     res.sendStatus(200);
   });
 
+  app.post("/api/test-twilio", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    const { to, message } = req.body;
+    if (!to || !message) {
+      return res.status(400).json({ message: "Phone number and message are required" });
+    }
+
+    try {
+      const twilioMessage = await twilioClient.messages.create({
+        body: message,
+        to: to,
+        from: process.env.TWILIO_PHONE_NUMBER!,
+      });
+
+      // Track message usage for billing
+      await storage.trackMessageUsage({
+        userId: req.user.id,
+        messageId: twilioMessage.sid,
+        direction: 'outbound',
+        timestamp: new Date(),
+        status: 'sent'
+      });
+
+      res.status(200).json({
+        success: true,
+        messageId: twilioMessage.sid,
+        status: twilioMessage.status
+      });
+    } catch (error) {
+      console.error("Error sending test message:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to send test message",
+        error: error.message 
+      });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

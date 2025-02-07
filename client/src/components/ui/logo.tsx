@@ -1,5 +1,5 @@
 
-import logo from '../../assets/logo.png'
+import logo from '@/assets/logo.png'
 
 export function Logo({ className }: { className?: string }) {
   return (

@@ -17,29 +17,43 @@ import { useToast } from "@/hooks/use-toast";
 
 const plans = [
   {
-    name: "Basic",
-    price: "$99",
+    name: "Starter",
+    price: "$49",
     description: "Perfect for small businesses",
     features: [
-      "1,000 SMS messages included",
+      "500 SMS messages included",
       "Automatic missed call responses",
       "Basic lead tracking",
       "Email support",
     ],
-    priceId: "basic",
+    priceId: "starter",
   },
   {
-    name: "Professional",
-    price: "$199",
+    name: "Growth",
+    price: "$99",
     description: "For growing businesses",
+    features: [
+      "1,500 SMS messages included",
+      "Priority missed call handling",
+      "Advanced lead management",
+      "Priority support",
+      "Custom auto-response messages",
+    ],
+    priceId: "growth",
+  },
+  {
+    name: "Pro",
+    price: "$199",
+    description: "For high-volume businesses",
     features: [
       "5,000 SMS messages included",
       "Priority missed call handling",
       "Advanced lead management",
       "Priority support",
       "Custom auto-response messages",
+      "Dedicated account manager",
     ],
-    priceId: "professional",
+    priceId: "pro",
   },
 ];
 

@@ -1,4 +1,5 @@
 import { Link } from "wouter";
+import { Logo } from "@/components/ui/logo";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -19,7 +20,7 @@ export default function Landing() {
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-sm border-b">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <img src="/images/logo.png" alt="PingBack Now" className="h-8 w-auto" />
+            <Logo className="h-8 w-auto" />
           </div>
           <div className="space-x-4">
             <Link href="/login">

@@ -1,12 +1,12 @@
 
-import logo from '@/assets/logo.png'
+import { cn } from "@/lib/utils"
 
 export function Logo({ className }: { className?: string }) {
   return (
     <img 
-      src={logo} 
+      src="/logo.png"
       alt="PingBack Now Logo" 
-      className={className}
+      className={cn("w-auto", className)}
       width={150}
       height={40}
     />

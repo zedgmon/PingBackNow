@@ -76,7 +76,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       {/* Sidebar - Always visible */}
       <div className="w-64 flex-shrink-0 border-r bg-card">
         <div className="flex h-16 shrink-0 items-center px-6 justify-between">
-          <h1 className="text-lg font-semibold">Business Auto-Responder</h1>
+          <div className="flex items-center gap-4">
+            <img src="/images/logo.png" alt="PingBack Now" className="h-8 w-auto" />
+          </div>
           <NotificationBell />
         </div>
         <div className="flex flex-col gap-y-5 px-6 pb-4">

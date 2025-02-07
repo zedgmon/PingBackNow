@@ -98,7 +98,7 @@ export default function Landing() {
             Calculate Your Potential Revenue
           </h2>
           <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
-            See how much revenue you could recover by converting missed calls into leads
+            See how much revenue you could recover by converting missed calls into leads. Based on our customer data, this calculator uses a 20% conversion rate - the average success rate businesses achieve with our auto-response system.
           </p>
 
           <div className="max-w-3xl mx-auto">

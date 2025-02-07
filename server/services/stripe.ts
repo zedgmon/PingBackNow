@@ -2,10 +2,14 @@ import Stripe from 'stripe';
 import { env } from '../env';
 import { db } from '../db';
 import { users, subscriptionPlans, payments } from '@shared/schema';
-import { and, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
+
+if (!process.env.STRIPE_SECRET_KEY) {
+  throw new Error('STRIPE_SECRET_KEY environment variable is required');
+}
 
 // Initialize Stripe with secret key
-const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: '2023-10-16',
 });
 
@@ -112,10 +116,14 @@ export class StripeService {
     signature: string,
   ) {
     try {
+      if (!process.env.STRIPE_WEBHOOK_SECRET) {
+        throw new Error('STRIPE_WEBHOOK_SECRET environment variable is required');
+      }
+
       const event = stripe.webhooks.constructEvent(
         body,
         signature,
-        env.STRIPE_WEBHOOK_SECRET
+        process.env.STRIPE_WEBHOOK_SECRET
       );
 
       const { object } = event.data;
@@ -147,6 +155,7 @@ export class StripeService {
                 stripePaymentIntentId: invoice.payment_intent as string,
                 amount: invoice.amount_paid / 100, // Convert from cents to dollars
                 status: 'succeeded',
+                createdAt: new Date(),
               });
             }
           }
@@ -166,6 +175,7 @@ export class StripeService {
                 stripePaymentIntentId: invoice.payment_intent as string,
                 amount: invoice.amount_due / 100,
                 status: 'failed',
+                createdAt: new Date(),
               });
             }
           }
@@ -176,7 +186,7 @@ export class StripeService {
       return { received: true };
     } catch (err) {
       console.error('Error processing Stripe webhook:', err);
-      throw new Error(`Webhook Error: ${err.message}`);
+      throw new Error(`Webhook Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
   }
 }

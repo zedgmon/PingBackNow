@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PhoneCall } from "lucide-react";
+import { Logo } from "@/components/ui/logo";
 
 interface AuthPageProps {
   defaultTab?: "login" | "register";
@@ -63,8 +63,7 @@ export default function AuthPage({ defaultTab = "login" }: AuthPageProps) {
           {/* Hero Section */}
           <div className="flex flex-col justify-center space-y-6">
             <div className="flex items-center gap-2 text-primary">
-              <PhoneCall size={32} />
-              <h1 className="text-3xl font-bold">Business Auto-Responder</h1>
+              <Logo className="h-12 w-auto" />
             </div>
             <p className="text-lg text-gray-600">
               Never miss another customer again. Automatically respond to missed calls,

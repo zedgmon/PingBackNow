@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Check, CreditCard } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { CreditUsageChart } from "@/components/credit-usage-chart";
 
 const plans = [
   {
@@ -87,6 +88,8 @@ export default function Billing() {
             Choose a plan that works for your business
           </p>
         </div>
+
+        <CreditUsageChart />
 
         {user?.subscriptionPlan && (
           <Card>
@@ -167,23 +170,33 @@ export default function Billing() {
               <div>
                 <p className="text-sm font-medium">Starter Plan</p>
                 <p className="text-lg font-medium">
-                  $0.05 <span className="text-sm text-muted-foreground">per additional SMS</span>
+                  $0.05{" "}
+                  <span className="text-sm text-muted-foreground">
+                    per additional SMS
+                  </span>
                 </p>
               </div>
               <div>
                 <p className="text-sm font-medium">Growth Plan</p>
                 <p className="text-lg font-medium">
-                  $0.04 <span className="text-sm text-muted-foreground">per additional SMS</span>
+                  $0.04{" "}
+                  <span className="text-sm text-muted-foreground">
+                    per additional SMS
+                  </span>
                 </p>
               </div>
               <div>
                 <p className="text-sm font-medium">Pro Plan</p>
                 <p className="text-lg font-medium">
-                  $0.03 <span className="text-sm text-muted-foreground">per additional SMS</span>
+                  $0.03{" "}
+                  <span className="text-sm text-muted-foreground">
+                    per additional SMS
+                  </span>
                 </p>
               </div>
               <p className="text-sm text-muted-foreground">
-                Additional SMS charges are billed at the end of each billing cycle
+                Additional SMS charges are billed at the end of each billing
+                cycle
               </p>
             </div>
           </CardContent>

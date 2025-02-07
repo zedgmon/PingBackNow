@@ -7,6 +7,8 @@ import { handleMissedCall } from "./twilio-service";
 import { z } from "zod";
 import { initGoogleSheetsService, getGoogleSheetsService } from './google-sheets-service';
 import twilio from 'twilio';
+import { eq, sql, and } from "drizzle-orm"; 
+import { db, messageUsage } from "./db"; 
 
 // Initialize Twilio client
 const twilioClient = twilio(
@@ -403,6 +405,48 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+
+  // Credit Usage Stats
+  app.get("/api/credit-usage", async (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    try {
+      // Get message usage stats for the last 30 days
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      // Query daily message usage directly from the database
+      const dailyUsage = await db.select({
+        date: sql`DATE(timestamp)`,
+        count: sql`COUNT(*)`,
+      })
+      .from(messageUsage)
+      .where(
+        and(
+          eq(messageUsage.userId, req.user.id),
+          sql`timestamp >= ${thirtyDaysAgo}`
+        )
+      )
+      .groupBy(sql`DATE(timestamp)`);
+
+      // Get total messages in last 30 days
+      const totalMessages = dailyUsage.reduce((sum, day) => sum + Number(day.count), 0);
+
+      // Get current credit balance
+      const user = await storage.getUser(req.user.id);
+
+      res.json({
+        currentBalance: user?.creditBalance || 0,
+        usage: dailyUsage,
+        totalMessagesLast30Days: totalMessages,
+      });
+    } catch (error) {
+      console.error('Error fetching credit usage:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to fetch credit usage'
+      });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

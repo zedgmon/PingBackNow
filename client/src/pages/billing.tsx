@@ -163,12 +163,29 @@ export default function Billing() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-lg font-medium">
-              $0.05 <span className="text-sm text-muted-foreground">per SMS</span>
-            </p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Additional SMS charges are billed at the end of each billing cycle
-            </p>
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm font-medium">Starter Plan</p>
+                <p className="text-lg font-medium">
+                  $0.05 <span className="text-sm text-muted-foreground">per additional SMS</span>
+                </p>
+              </div>
+              <div>
+                <p className="text-sm font-medium">Growth Plan</p>
+                <p className="text-lg font-medium">
+                  $0.04 <span className="text-sm text-muted-foreground">per additional SMS</span>
+                </p>
+              </div>
+              <div>
+                <p className="text-sm font-medium">Pro Plan</p>
+                <p className="text-lg font-medium">
+                  $0.03 <span className="text-sm text-muted-foreground">per additional SMS</span>
+                </p>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Additional SMS charges are billed at the end of each billing cycle
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>

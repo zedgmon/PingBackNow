@@ -294,7 +294,7 @@ export default function Landing() {
                     <div className="border-t border-b py-4">
                       <div className="font-medium">{plan.messages} SMS included</div>
                       <div className="text-sm text-muted-foreground">
-                        {plan.extraSMS} per additional SMS
+                        ${plan.name === "Starter" ? "0.05" : plan.name === "Growth" ? "0.04" : "0.03"} per additional SMS
                       </div>
                     </div>
                     <ul className="space-y-3">

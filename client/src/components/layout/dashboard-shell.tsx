@@ -77,7 +77,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       <div className="w-64 flex-shrink-0 border-r bg-card">
         <div className="flex h-16 shrink-0 items-center px-6 justify-between">
           <div className="flex items-center gap-4">
-            <Logo className="text-xl font-bold" />
+            <Link href="/">
+              <Logo className="text-xl font-bold cursor-pointer" />
+            </Link>
           </div>
           <NotificationBell />
         </div>

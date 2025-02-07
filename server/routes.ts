@@ -416,28 +416,34 @@ export function registerRoutes(app: Express): Server {
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
       // Query daily message usage directly from the database
-      const dailyUsage = await db.select({
-        date: sql`DATE(timestamp)`,
-        count: sql`COUNT(*)`,
-      })
-      .from(messageUsage)
-      .where(
-        and(
-          eq(messageUsage.userId, req.user.id),
-          sql`timestamp >= ${thirtyDaysAgo}`
+      const dailyUsage = await db
+        .select({
+          date: sql`to_char(${messageUsage.timestamp}::date, 'YYYY-MM-DD')`,
+          count: sql`count(*)::integer`,
+        })
+        .from(messageUsage)
+        .where(
+          and(
+            eq(messageUsage.userId, req.user.id),
+            sql`${messageUsage.timestamp} >= ${thirtyDaysAgo}`
+          )
         )
-      )
-      .groupBy(sql`DATE(timestamp)`);
+        .groupBy(sql`${messageUsage.timestamp}::date`)
+        .orderBy(sql`${messageUsage.timestamp}::date`);
 
       // Get total messages in last 30 days
       const totalMessages = dailyUsage.reduce((sum, day) => sum + Number(day.count), 0);
 
       // Get current credit balance
       const user = await storage.getUser(req.user.id);
+      const currentBalance = user?.creditBalance ? parseFloat(user.creditBalance.toString()) : 0;
 
       res.json({
-        currentBalance: user?.creditBalance || 0,
-        usage: dailyUsage,
+        currentBalance,
+        usage: dailyUsage.map(day => ({
+          date: day.date,
+          count: Number(day.count)
+        })),
         totalMessagesLast30Days: totalMessages,
       });
     } catch (error) {

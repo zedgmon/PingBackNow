@@ -9,7 +9,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 
 interface CreditUsageData {
   currentBalance: number;
@@ -37,7 +37,7 @@ export function CreditUsageChart() {
   }
 
   const formattedData = data?.usage.map((item) => ({
-    date: format(new Date(item.date), "MMM d"),
+    date: format(parseISO(item.date), "MMM d"),
     messages: item.count,
   }));
 
@@ -46,7 +46,8 @@ export function CreditUsageChart() {
       <CardHeader>
         <CardTitle>Credit Usage Overview</CardTitle>
         <CardDescription>
-          Current Balance: ${data?.currentBalance.toFixed(2)} | Messages Sent (30 days): {data?.totalMessagesLast30Days}
+          Current Balance: ${data?.currentBalance?.toFixed(2)} | Messages Sent (30 days):{" "}
+          {data?.totalMessagesLast30Days ?? 0}
         </CardDescription>
       </CardHeader>
       <CardContent>

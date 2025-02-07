@@ -17,8 +17,19 @@ import { useToast } from "@/hooks/use-toast";
 import { CreditUsageChart } from "@/components/credit-usage-chart";
 import { loadStripe } from "@stripe/stripe-js";
 
-// Initialize Stripe
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+// Initialize Stripe with better error handling
+const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+if (!stripePublishableKey) {
+  console.error('Missing VITE_STRIPE_PUBLISHABLE_KEY environment variable');
+}
+
+let stripePromise: Promise<any> | null = null;
+const getStripe = () => {
+  if (!stripePromise && stripePublishableKey) {
+    stripePromise = loadStripe(stripePublishableKey);
+  }
+  return stripePromise;
+};
 
 const plans = [
   {
@@ -72,25 +83,31 @@ export default function Billing() {
   const subscribeMutation = useMutation({
     mutationFn: async (planId: string) => {
       try {
-        const stripe = await stripePromise;
-        if (!stripe) throw new Error('Stripe failed to initialize');
+        const stripe = await getStripe();
+        if (!stripe) {
+          throw new Error('Stripe failed to initialize. Please check if the publishable key is set correctly.');
+        }
 
-        // First create a payment method
+        // Create elements instance
+        const elements = stripe.elements();
+        const card = elements.create('card');
+        card.mount('#card-element');
+
+        // Create payment method
         const { error: paymentMethodError, paymentMethod } = await stripe.createPaymentMethod({
           type: 'card',
-          card: {
-            number: '4242424242424242', // Test card number
-            exp_month: 12,
-            exp_year: 2025,
-            cvc: '123',
-          },
+          card,
         });
 
         if (paymentMethodError) {
-          throw new Error(paymentMethodError.message);
+          throw new Error(`Payment method error: ${paymentMethodError.message}`);
         }
 
-        // Create subscription with the payment method
+        if (!paymentMethod) {
+          throw new Error('Failed to create payment method');
+        }
+
+        // Create subscription
         const response = await apiRequest("POST", "/api/subscribe/create", { 
           planId, 
           paymentMethodId: paymentMethod.id 
@@ -102,16 +119,17 @@ export default function Billing() {
           throw new Error(data.error);
         }
 
-        // If we have a client secret, handle the payment confirmation
+        // Handle payment confirmation if needed
         if (data.clientSecret) {
           const { error: confirmError } = await stripe.confirmCardPayment(data.clientSecret);
           if (confirmError) {
-            throw new Error(confirmError.message);
+            throw new Error(`Payment confirmation error: ${confirmError.message}`);
           }
         }
 
         return data;
       } catch (error) {
+        console.error('Subscription error:', error);
         throw error;
       }
     },
@@ -142,6 +160,7 @@ export default function Billing() {
 
         <CreditUsageChart />
 
+        {/* Display current subscription if exists */}
         {user?.subscriptionPlan && (
           <Card>
             <CardHeader>
@@ -168,6 +187,10 @@ export default function Billing() {
           </Card>
         )}
 
+        {/* Card element container */}
+        <div id="card-element" className="p-4 border rounded-md bg-background"></div>
+
+        {/* Subscription plans */}
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
           {plans.map((plan) => (
             <Card key={plan.name}>
@@ -209,6 +232,7 @@ export default function Billing() {
           ))}
         </div>
 
+        {/* Additional pricing information */}
         <Card>
           <CardHeader>
             <CardTitle>Additional SMS Pricing</CardTitle>

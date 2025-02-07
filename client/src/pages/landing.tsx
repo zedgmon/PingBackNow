@@ -230,77 +230,96 @@ export default function Landing() {
           <h2 className="text-3xl font-bold text-center mb-12">
             Simple, Transparent Pricing
           </h2>
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {[
               {
                 name: "Starter",
-                price: "$29",
-                description: "Perfect for small businesses",
+                price: "$49",
+                description: "Best for small businesses",
+                messages: "500",
+                extraSMS: "$0.05",
                 features: [
-                  "100 SMS messages/month",
-                  "Basic auto-response",
-                  "Lead tracking",
+                  "Simple dashboard & logs",
+                  "Instant auto-responses",
+                  "Basic lead tracking",
                   "Email support",
                 ],
               },
               {
-                name: "Professional",
-                price: "$79",
-                description: "For growing businesses",
+                name: "Growth",
+                price: "$99",
+                description: "Best for mid-sized businesses",
+                messages: "1,500",
+                extraSMS: "$0.04",
+                popular: true,
                 features: [
-                  "500 SMS messages/month",
-                  "Custom auto-responses",
-                  "Advanced lead management",
-                  "Priority support",
+                  "AI-powered suggested replies",
+                  "Lead collection system",
+                  "Google Sheets integration",
+                  "Priority email support",
+                  "Advanced analytics",
                 ],
               },
               {
-                name: "Enterprise",
-                price: "Custom",
-                description: "For large organizations",
+                name: "Pro",
+                price: "$199",
+                description: "Best for high-volume businesses",
+                messages: "5,000",
+                extraSMS: "$0.03",
                 features: [
-                  "Unlimited SMS messages",
-                  "Multiple phone numbers",
-                  "API access",
-                  "24/7 support",
+                  "AI Smart Replies included",
+                  "Priority support & onboarding",
+                  "Custom integrations",
+                  "Dedicated account manager",
+                  "24/7 phone support",
                 ],
               },
             ].map((plan) => (
-              <Card key={plan.name} className="relative">
-                <CardHeader>
-                  <CardTitle>{plan.name}</CardTitle>
-                  <CardDescription>{plan.description}</CardDescription>
-                  <div className="text-3xl font-bold mt-4">
-                    {plan.price}
-                    {plan.price !== "Custom" && (
-                      <span className="text-sm font-normal text-muted-foreground">
-                        /month
-                      </span>
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2 mb-6">
-                    {plan.features.map((feature) => (
-                      <li key={feature} className="flex items-center">
-                        <span className="mr-2">✓</span>
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-                  <Link href="/register">
-                    <Button className="w-full" variant={plan.name === "Professional" ? "default" : "outline"}>
-                      Get Started
-                    </Button>
-                  </Link>
-                </CardContent>
-                {plan.name === "Professional" && (
-                  <div className="absolute -top-2 left-0 right-0 text-center">
-                    <span className="bg-primary text-primary-foreground text-sm px-3 py-1 rounded-full">
+              <Card key={plan.name} className={`relative transition-all duration-200 hover:shadow-lg ${plan.popular ? 'border-primary shadow-md scale-105' : ''}`}>
+                {plan.popular && (
+                  <div className="absolute -top-4 left-0 right-0 text-center">
+                    <span className="bg-primary text-primary-foreground text-sm px-4 py-1 rounded-full font-medium">
                       Most Popular
                     </span>
                   </div>
                 )}
+                <CardHeader>
+                  <CardTitle className="text-xl">{plan.name}</CardTitle>
+                  <CardDescription>{plan.description}</CardDescription>
+                  <div className="mt-4">
+                    <div className="text-4xl font-bold">{plan.price}</div>
+                    <div className="text-sm text-muted-foreground">per month</div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="border-t border-b py-4">
+                      <div className="font-medium">{plan.messages} SMS included</div>
+                      <div className="text-sm text-muted-foreground">
+                        {plan.extraSMS} per additional SMS
+                      </div>
+                    </div>
+                    <ul className="space-y-3">
+                      {plan.features.map((feature) => (
+                        <li key={feature} className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-primary flex-shrink-0" />
+                          <span className="text-sm">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="mt-6">
+                    <Link href="/register">
+                      <Button 
+                        className="w-full" 
+                        variant={plan.popular ? "default" : "outline"}
+                        size="lg"
+                      >
+                        Start Free Trial
+                      </Button>
+                    </Link>
+                  </div>
+                </CardContent>
               </Card>
             ))}
           </div>

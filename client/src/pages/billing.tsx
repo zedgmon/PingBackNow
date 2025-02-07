@@ -32,7 +32,7 @@ const plans = [
       "Email support",
     ],
     priceId: "starter",
-    stripePriceId: "price_starter", // Add your Stripe price ID here
+    stripePriceId: "price_H5rlYOyNvVih2d", // Test price ID
   },
   {
     name: "Growth",
@@ -46,7 +46,7 @@ const plans = [
       "Custom auto-response messages",
     ],
     priceId: "growth",
-    stripePriceId: "price_growth", // Add your Stripe price ID here
+    stripePriceId: "price_H5rlZPzNwXij3e", // Test price ID
   },
   {
     name: "Pro",
@@ -61,7 +61,7 @@ const plans = [
       "Dedicated account manager",
     ],
     priceId: "pro",
-    stripePriceId: "price_pro", // Add your Stripe price ID here
+    stripePriceId: "price_H5rlXQyMuWik4f", // Test price ID
   },
 ];
 
@@ -71,26 +71,49 @@ export default function Billing() {
 
   const subscribeMutation = useMutation({
     mutationFn: async (planId: string) => {
-      const stripe = await stripePromise;
-      if (!stripe) throw new Error('Stripe failed to initialize');
+      try {
+        const stripe = await stripePromise;
+        if (!stripe) throw new Error('Stripe failed to initialize');
 
-      // Create subscription
-      const response = await apiRequest("POST", "/api/subscribe/create", { planId });
-      const data = await response.json();
+        // First create a payment method
+        const { error: paymentMethodError, paymentMethod } = await stripe.createPaymentMethod({
+          type: 'card',
+          card: {
+            number: '4242424242424242', // Test card number
+            exp_month: 12,
+            exp_year: 2025,
+            cvc: '123',
+          },
+        });
 
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      // If we have a client secret, handle the payment
-      if (data.clientSecret) {
-        const { error } = await stripe.confirmCardPayment(data.clientSecret);
-        if (error) {
-          throw new Error(error.message);
+        if (paymentMethodError) {
+          throw new Error(paymentMethodError.message);
         }
-      }
 
-      return data;
+        // Create subscription with the payment method
+        const response = await apiRequest("POST", "/api/subscribe/create", { 
+          planId, 
+          paymentMethodId: paymentMethod.id 
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        // If we have a client secret, handle the payment confirmation
+        if (data.clientSecret) {
+          const { error: confirmError } = await stripe.confirmCardPayment(data.clientSecret);
+          if (confirmError) {
+            throw new Error(confirmError.message);
+          }
+        }
+
+        return data;
+      } catch (error) {
+        throw error;
+      }
     },
     onSuccess: () => {
       toast({

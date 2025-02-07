@@ -9,6 +9,7 @@ import { initGoogleSheetsService, getGoogleSheetsService } from './google-sheets
 import twilio from 'twilio';
 import { eq, sql, and } from "drizzle-orm"; 
 import { db, messageUsage } from "./db"; 
+import { subscriptionRouter } from './routes/subscription';
 
 // Initialize Twilio client
 const twilioClient = twilio(
@@ -31,6 +32,9 @@ export function registerRoutes(app: Express): Server {
   }
 
   setupAuth(app);
+
+  // Register subscription routes
+  app.use('/api/subscribe', subscriptionRouter);
 
   // Basic health check endpoint
   app.get("/api/health", (_req: Request, res: Response) => {

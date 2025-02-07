@@ -20,7 +20,6 @@ const navigation = [
   { name: "Missed Calls", href: "/missed-calls", icon: Phone },
   { name: "Conversations", href: "/conversations", icon: MessageCircle },
   { name: "Scheduled Messages", href: "/scheduled", icon: CalendarDays },
-  { name: "Leads", href: "/leads", icon: Users },
   { name: "Settings", href: "/settings", icon: Settings },
   { name: "Billing", href: "/billing", icon: CreditCard },
 ];

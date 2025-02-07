@@ -1,12 +1,18 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
-import { insertLeadSchema, insertScheduledMessageSchema } from "@shared/schema";
+import { insertLeadSchema, insertScheduledMessageSchema, adminStatsSchema, adminCustomerSchema } from "@shared/schema";
 import { handleMissedCall } from "./twilio-service";
 import { z } from "zod";
-import { initGoogleSheetsService } from './google-sheets-service';
-import twilio from 'twilio'; // Assuming this import is handled elsewhere
+import { initGoogleSheetsService, getGoogleSheetsService } from './google-sheets-service';
+import twilio from 'twilio';
+
+// Initialize Twilio client
+const twilioClient = twilio(
+  process.env.TWILIO_ACCOUNT_SID!,
+  process.env.TWILIO_AUTH_TOKEN!
+);
 
 export function registerRoutes(app: Express): Server {
   // Initialize Google Sheets service with credentials
@@ -16,14 +22,16 @@ export function registerRoutes(app: Express): Server {
       initGoogleSheetsService(credentials);
       console.log('Google Sheets service initialized successfully');
     } catch (error) {
-      console.error('Error initializing Google Sheets service:', error);
+      if (error instanceof Error) {
+        console.error('Error initializing Google Sheets service:', error.message);
+      }
     }
   }
 
   setupAuth(app);
 
   // Add the check balance middleware
-  app.use(async (req, res, next) => {
+  app.use(async (req: Request, res: Response, next: NextFunction) => {
     if (!req.isAuthenticated()) return next();
 
     const user = await storage.getUser(req.user.id);
@@ -33,7 +41,7 @@ export function registerRoutes(app: Express): Server {
     const CRITICAL_BALANCE_THRESHOLD = 5; // $5
 
     // Only check once per day
-    const shouldCheckBalance = !user.lastBalanceNotificationAt || 
+    const shouldCheckBalance = !user.lastBalanceNotificationAt ||
       (new Date().getTime() - new Date(user.lastBalanceNotificationAt).getTime()) > 24 * 60 * 60 * 1000;
 
     if (shouldCheckBalance && user.creditBalance !== null) {
@@ -77,20 +85,20 @@ export function registerRoutes(app: Express): Server {
 
 
   // Missed Calls
-  app.get("/api/missed-calls", async (req, res) => {
+  app.get("/api/missed-calls", async (req: Request, res: Response) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const calls = await storage.getMissedCallsByUserId(req.user.id);
     res.json(calls);
   });
 
   // Scheduled Messages
-  app.get("/api/scheduled-messages", async (req, res) => {
+  app.get("/api/scheduled-messages", async (req: Request, res: Response) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const messages = await storage.getScheduledMessagesByUserId(req.user.id);
     res.json(messages);
   });
 
-  app.post("/api/scheduled-messages", async (req, res) => {
+  app.post("/api/scheduled-messages", async (req: Request, res: Response) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
       const parsedData = insertScheduledMessageSchema.omit({ userId: true }).parse({
@@ -106,38 +114,48 @@ export function registerRoutes(app: Express): Server {
       res.status(201).json(message);
     } catch (error) {
       console.error('Error creating scheduled message:', error);
-      res.status(400).json({ 
+      res.status(400).json({
         message: 'Invalid message data',
-        error: error.message 
+        error: error instanceof Error ? error.message : 'An unknown error occurred'
       });
     }
   });
 
   // Leads
-  app.get("/api/leads", async (req, res) => {
+  app.get("/api/leads", async (req: Request, res: Response) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const leads = await storage.getLeadsByUserId(req.user.id);
     res.json(leads);
   });
 
-  app.post("/api/leads", async (req, res) => {
+  app.post("/api/leads", async (req: Request, res: Response) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    const data = insertLeadSchema.parse(req.body);
-    const lead = await storage.createLead({
-      ...data,
-      userId: req.user.id,
-    });
-    res.status(201).json(lead);
+    try {
+      const data = insertLeadSchema.parse(req.body);
+      const lead = await storage.createLead({
+        ...data,
+        userId: req.user.id,
+        createdAt: new Date(),
+      });
+      res.status(201).json(lead);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid lead data", errors: error.errors });
+      } else {
+        console.error("Error creating lead:", error);
+        res.status(500).json({ message: "Failed to create lead" });
+      }
+    }
   });
 
   // Conversations
-  app.get("/api/conversations", async (req, res) => {
+  app.get("/api/conversations", async (req: Request, res: Response) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const conversations = await storage.getConversationsByUserId(req.user.id);
     res.json(conversations);
   });
 
-  app.get("/api/conversations/:id/messages", async (req, res) => {
+  app.get("/api/conversations/:id/messages", async (req: Request, res: Response) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
 
     const conversation = await storage.getConversation(parseInt(req.params.id));
@@ -149,7 +167,7 @@ export function registerRoutes(app: Express): Server {
     res.json(messages);
   });
 
-  app.post("/api/conversations/:id/messages", async (req, res) => {
+  app.post("/api/conversations/:id/messages", async (req: Request, res: Response) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
 
     const conversation = await storage.getConversation(parseInt(req.params.id));
@@ -190,12 +208,12 @@ export function registerRoutes(app: Express): Server {
       res.status(201).json(updatedMessage);
     } catch (error) {
       console.error("Error sending message:", error);
-      res.status(500).json({ message: "Failed to send message" });
+      res.status(500).json({ message: "Failed to send message", error: error instanceof Error ? error.message : 'An unknown error occurred' });
     }
   });
 
   // Twilio Webhook for Missed Calls
-  app.post("/api/twilio/call-status", async (req, res) => {
+  app.post("/api/twilio/call-status", async (req: Request, res: Response) => {
     console.log("Received call status webhook:", req.body);
     const callStatus = req.body.CallStatus;
     const to = req.body.To;
@@ -253,7 +271,7 @@ export function registerRoutes(app: Express): Server {
     autoResponseMessage: z.string().optional(),
   });
 
-  app.patch("/api/settings", async (req, res) => {
+  app.patch("/api/settings", async (req: Request, res: Response) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
 
     const data = updateSettingsSchema.parse(req.body);
@@ -268,7 +286,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Add new routes for Google Sheets
-  app.post('/api/sheets/initialize', async (req, res) => {
+  app.post('/api/sheets/initialize', async (req: Request, res: Response) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
 
     try {
@@ -276,14 +294,14 @@ export function registerRoutes(app: Express): Server {
       res.json({ spreadsheetId });
     } catch (error) {
       console.error('Error initializing Google Sheets:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         message: 'Failed to initialize Google Sheets',
-        error: error.message 
+        error: error instanceof Error ? error.message : 'An unknown error occurred'
       });
     }
   });
 
-  app.post('/api/sheets/sync', async (req, res) => {
+  app.post('/api/sheets/sync', async (req: Request, res: Response) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
 
     try {
@@ -291,14 +309,14 @@ export function registerRoutes(app: Express): Server {
       res.sendStatus(200);
     } catch (error) {
       console.error('Error syncing leads to Google Sheets:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         message: 'Failed to sync leads to Google Sheets',
-        error: error.message 
+        error: error instanceof Error ? error.message : 'An unknown error occurred'
       });
     }
   });
 
-  app.get('/api/sheets/link', async (req, res) => {
+  app.get('/api/sheets/link', async (req: Request, res: Response) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
 
     try {
@@ -307,30 +325,30 @@ export function registerRoutes(app: Express): Server {
       if (!spreadsheetId) {
         // Initialize if not already done
         const newId = await storage.initializeGoogleSheets();
-        return res.json({ 
-          url: `https://docs.google.com/spreadsheets/d/${newId}` 
+        return res.json({
+          url: `https://docs.google.com/spreadsheets/d/${newId}`
         });
       }
-      return res.json({ 
-        url: `https://docs.google.com/spreadsheets/d/${spreadsheetId}` 
+      return res.json({
+        url: `https://docs.google.com/spreadsheets/d/${spreadsheetId}`
       });
     } catch (error) {
       console.error('Error getting sheets link:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         message: 'Failed to get Google Sheets link',
-        error: error.message 
+        error: error instanceof Error ? error.message : 'An unknown error occurred'
       });
     }
   });
 
   // Notifications
-  app.get("/api/notifications", async (req, res) => {
+  app.get("/api/notifications", async (req: Request, res: Response) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     const notifications = await storage.getNotificationsByUserId(req.user.id);
     res.json(notifications);
   });
 
-  app.post("/api/notifications/:id/read", async (req, res) => {
+  app.post("/api/notifications/:id/read", async (req: Request, res: Response) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
 
     const notification = await storage.getNotification(parseInt(req.params.id));
@@ -342,7 +360,7 @@ export function registerRoutes(app: Express): Server {
     res.sendStatus(200);
   });
 
-  app.post("/api/test-twilio", async (req, res) => {
+  app.post("/api/test-twilio", async (req: Request, res: Response) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
 
     const { to, message } = req.body;
@@ -373,11 +391,72 @@ export function registerRoutes(app: Express): Server {
       });
     } catch (error) {
       console.error("Error sending test message:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         success: false,
         message: "Failed to send test message",
-        error: error.message 
+        error: error instanceof Error ? error.message : 'An unknown error occurred'
       });
+    }
+  });
+
+  // Admin specific routes
+  const isAdmin = (req: Request, res: Response, next: NextFunction) => {
+    if (!req.isAuthenticated() || !req.user.isAdmin) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    next();
+  };
+
+  app.get("/api/admin/stats", isAdmin, async (req: Request, res: Response) => {
+    try {
+      const users = await storage.getAllUsers();
+      const now = new Date();
+      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      // Calculate total SMS sent this month from message usage
+      const stats = {
+        activeCustomers: users.filter(u => !u.isAdmin).length,
+        newCustomersThisMonth: users.filter(u => !u.isAdmin && u.lastBalanceNotificationAt && u.lastBalanceNotificationAt >= firstDayOfMonth).length,
+        totalSmsSent: 0, // Will be calculated from messageUsage
+        monthlyRevenue: 0,
+        revenueGrowth: 0,
+      };
+
+      const validatedStats = adminStatsSchema.parse(stats);
+      res.json(validatedStats);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid stats format", errors: error.errors });
+      } else {
+        console.error("Error fetching admin stats:", error);
+        res.status(500).json({ message: "Failed to fetch admin stats", error: error instanceof Error ? error.message : 'An unknown error occurred' });
+      }
+    }
+  });
+
+  app.get("/api/admin/top-customers", isAdmin, async (req: Request, res: Response) => {
+    try {
+      const users = await storage.getAllUsers();
+      const topCustomers = users
+        .filter(user => !user.isAdmin)
+        .map(user => ({
+          id: user.id,
+          businessName: user.businessName,
+          subscriptionPlan: user.subscriptionPlan || 'Free',
+          smsSent: 0, // Will be calculated from messageUsage
+          creditBalance: parseFloat(user.creditBalance?.toString() || '0'),
+        }))
+        .slice(0, 5);
+
+      const validatedCustomers = z.array(adminCustomerSchema).parse(topCustomers);
+      res.json(validatedCustomers);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid customer data format", errors: error.errors });
+      } else {
+        console.error("Error fetching top customers:", error);
+        res.status(500).json({ message: "Failed to fetch top customers", error: error instanceof Error ? error.message : 'An unknown error occurred' });
+      }
     }
   });
 

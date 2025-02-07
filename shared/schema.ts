@@ -140,3 +140,23 @@ export type Message = typeof messages.$inferSelect;
 export type MessageUsage = typeof messageUsage.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type Notification = typeof notifications.$inferSelect;
+
+// Admin specific types
+export const adminStatsSchema = z.object({
+  activeCustomers: z.number(),
+  newCustomersThisMonth: z.number(),
+  totalSmsSent: z.number(),
+  monthlyRevenue: z.number(),
+  revenueGrowth: z.number(),
+});
+
+export const adminCustomerSchema = z.object({
+  id: z.number(),
+  businessName: z.string(),
+  subscriptionPlan: z.string(),
+  smsSent: z.number(),
+  creditBalance: z.number(),
+});
+
+export type AdminStats = z.infer<typeof adminStatsSchema>;
+export type AdminCustomer = z.infer<typeof adminCustomerSchema>;

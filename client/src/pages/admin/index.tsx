@@ -16,13 +16,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Users, MessageSquare, DollarSign } from "lucide-react";
+import type { AdminStats, AdminCustomer } from "@shared/schema";
 
 export default function AdminDashboard() {
-  const { data: stats } = useQuery({
+  const { data: stats } = useQuery<AdminStats>({
     queryKey: ["/api/admin/stats"],
   });
 
-  const { data: topCustomers } = useQuery({
+  const { data: topCustomers } = useQuery<AdminCustomer[]>({
     queryKey: ["/api/admin/top-customers"],
   });
 
@@ -75,7 +76,7 @@ export default function AdminDashboard() {
                 ${stats?.monthlyRevenue?.toLocaleString() ?? 0}
               </div>
               <p className="text-xs text-muted-foreground">
-                {stats?.revenueGrowth > 0 ? "+" : ""}
+                {(stats?.revenueGrowth ?? 0) > 0 ? "+" : ""}
                 {stats?.revenueGrowth ?? 0}% from last month
               </p>
             </CardContent>

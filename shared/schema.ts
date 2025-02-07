@@ -1,8 +1,9 @@
-import { pgTable, text, serial, integer, timestamp, boolean, decimal } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, boolean, decimal, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
 
+// Existing users table with subscription-related fields
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
@@ -14,9 +15,33 @@ export const users = pgTable("users", {
   autoResponseMessage: text("auto_response_message"),
   subscriptionPlan: text("subscription_plan"),
   stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  subscriptionStatus: text("subscription_status").default("inactive"),
+  trialEndsAt: timestamp("trial_ends_at"),
   creditBalance: decimal("credit_balance").notNull().default("0"),
   lowBalanceNotificationSent: boolean("low_balance_notification_sent").notNull().default(false),
   lastBalanceNotificationAt: timestamp("last_balance_notification_at"),
+});
+
+// New table for subscription plans
+export const subscriptionPlans = pgTable("subscription_plans", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  stripePriceId: text("stripe_price_id").notNull(),
+  features: jsonb("features").notNull(),
+  pricePerMonth: decimal("price_per_month").notNull(),
+  messageCredits: integer("message_credits").notNull(),
+  active: boolean("active").notNull().default(true),
+});
+
+// New table for payment history
+export const payments = pgTable("payments", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  stripePaymentIntentId: text("stripe_payment_intent_id").notNull(),
+  amount: decimal("amount").notNull(),
+  status: text("status").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const messageUsage = pgTable("message_usage", {
@@ -91,6 +116,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   leads: many(leads),
   messageUsage: many(messageUsage),
   notifications: many(notifications),
+  payments: many(payments),
 }));
 
 export const conversationsRelations = relations(conversations, ({ one, many }) => ({
@@ -117,6 +143,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
   businessName: true,
+  subscriptionPlan: true,
 });
 
 export const insertMissedCallSchema = createInsertSchema(missedCalls);
@@ -126,6 +153,9 @@ export const insertConversationSchema = createInsertSchema(conversations);
 export const insertMessageSchema = createInsertSchema(messages);
 export const insertMessageUsageSchema = createInsertSchema(messageUsage);
 export const insertNotificationSchema = createInsertSchema(notifications);
+export const insertSubscriptionPlanSchema = createInsertSchema(subscriptionPlans);
+export const insertPaymentSchema = createInsertSchema(payments);
+
 
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -138,6 +168,8 @@ export type Message = typeof messages.$inferSelect;
 export type MessageUsage = typeof messageUsage.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type Notification = typeof notifications.$inferSelect;
+export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
+export type Payment = typeof payments.$inferSelect;
 
 // Admin specific types
 export const adminStatsSchema = z.object({
@@ -158,3 +190,16 @@ export const adminCustomerSchema = z.object({
 
 export type AdminStats = z.infer<typeof adminStatsSchema>;
 export type AdminCustomer = z.infer<typeof adminCustomerSchema>;
+
+export const subscriptionStatusSchema = z.enum([
+  "trialing",
+  "active",
+  "canceled",
+  "incomplete",
+  "incomplete_expired",
+  "past_due",
+  "unpaid",
+  "paused"
+]);
+
+export type SubscriptionStatus = z.infer<typeof subscriptionStatusSchema>;

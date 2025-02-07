@@ -298,6 +298,31 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.get('/api/sheets/link', async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    try {
+      const sheetsService = getGoogleSheetsService();
+      const spreadsheetId = await storage.getSpreadsheetId();
+      if (!spreadsheetId) {
+        // Initialize if not already done
+        const newId = await storage.initializeGoogleSheets();
+        return res.json({ 
+          url: `https://docs.google.com/spreadsheets/d/${newId}` 
+        });
+      }
+      return res.json({ 
+        url: `https://docs.google.com/spreadsheets/d/${spreadsheetId}` 
+      });
+    } catch (error) {
+      console.error('Error getting sheets link:', error);
+      res.status(500).json({ 
+        message: 'Failed to get Google Sheets link',
+        error: error.message 
+      });
+    }
+  });
+
   // Notifications
   app.get("/api/notifications", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);

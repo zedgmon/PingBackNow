@@ -200,6 +200,16 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getSpreadsheetId(): Promise<string | null> {
+    try {
+      const sheetsService = getGoogleSheetsService();
+      return sheetsService.getSpreadsheetId();
+    } catch (error) {
+      console.error('Error getting spreadsheet ID:', error);
+      return null;
+    }
+  }
+
   // Add new notification methods
   async getNotificationsByUserId(userId: number): Promise<Notification[]> {
     return await db

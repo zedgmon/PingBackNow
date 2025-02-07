@@ -5,6 +5,10 @@ export class GoogleSheetsService {
   private sheets;
   private spreadsheetId: string | null = null;
 
+  getSpreadsheetId(): string | null {
+    return this.spreadsheetId;
+  }
+
   constructor(credentials: any) {
     const auth = new google.auth.GoogleAuth({
       credentials,

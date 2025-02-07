@@ -3,8 +3,8 @@ import { db } from "./db";
 import { eq } from "drizzle-orm";
 import session from "express-session";
 import createMemoryStore from "memorystore";
-import { users, missedCalls, scheduledMessages, leads, conversations, messages, messageUsage } from "@shared/schema";
-import type { User, InsertUser, MissedCall, ScheduledMessage, Lead, Conversation, Message, MessageUsage } from "@shared/schema";
+import { users, missedCalls, scheduledMessages, leads, conversations, messages, messageUsage, notifications } from "@shared/schema";
+import type { User, InsertUser, MissedCall, ScheduledMessage, Lead, Conversation, Message, MessageUsage, Notification, InsertNotification } from "@shared/schema";
 import { GoogleSheetsService, initGoogleSheetsService, getGoogleSheetsService } from './google-sheets-service';
 
 const MemoryStore = createMemoryStore(session);
@@ -198,6 +198,43 @@ export class DatabaseStorage implements IStorage {
       console.error('Error syncing leads to Google Sheets:', error);
       throw error;
     }
+  }
+
+  // Add new notification methods
+  async getNotificationsByUserId(userId: number): Promise<Notification[]> {
+    return await db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.userId, userId))
+      .orderBy(notifications.createdAt);
+  }
+
+  async getNotification(id: number): Promise<Notification | undefined> {
+    const [notification] = await db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.id, id));
+    return notification;
+  }
+
+  async createNotification(notification: Omit<Notification, "id" | "createdAt">): Promise<Notification> {
+    const [newNotification] = await db
+      .insert(notifications)
+      .values({
+        ...notification,
+        createdAt: new Date(),
+      })
+      .returning();
+    return newNotification;
+  }
+
+  async updateNotification(id: number, updates: Partial<Notification>): Promise<Notification> {
+    const [updatedNotification] = await db
+      .update(notifications)
+      .set(updates)
+      .where(eq(notifications.id, id))
+      .returning();
+    return updatedNotification;
   }
 }
 

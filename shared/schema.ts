@@ -2,6 +2,7 @@ import { pgTable, text, serial, integer, timestamp, boolean, decimal } from "dri
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
+import type { InferSelectModel } from "drizzle-orm";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -134,7 +135,6 @@ export type MissedCall = typeof missedCalls.$inferSelect;
 export type ScheduledMessage = typeof scheduledMessages.$inferSelect;
 export type Lead = typeof leads.$inferSelect;
 export type Conversation = typeof conversations.$inferSelect;
-import type { InferSelect } from "drizzle-orm";
 export type Message = typeof messages.$inferSelect;
 export type MessageUsage = typeof messageUsage.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;

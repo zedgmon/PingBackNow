@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { MessageCircle, Phone, CalendarDays, Users, Calculator, DollarSign, Percent } from "lucide-react";
+import { MessageCircle, Phone, CalendarDays, Users, Calculator, DollarSign, Percent, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useForm } from "react-hook-form";

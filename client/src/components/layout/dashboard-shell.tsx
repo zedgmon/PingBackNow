@@ -1,6 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/ui/logo";
 import { useAuth } from "@/hooks/use-auth";
 import {
   Phone,
@@ -77,7 +78,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       <div className="w-64 flex-shrink-0 border-r bg-card">
         <div className="flex h-16 shrink-0 items-center px-6 justify-between">
           <div className="flex items-center gap-4">
-            <img src="/images/logo.png" alt="PingBack Now" className="h-8 w-auto" />
+            <Logo className="text-xl font-bold" />
           </div>
           <NotificationBell />
         </div>

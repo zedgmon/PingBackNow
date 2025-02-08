@@ -1,8 +1,8 @@
-import Stripe from 'stripe';
-import { env } from '../env';
-import { db } from '../db';
 import { users, subscriptionPlans, payments } from '@shared/schema';
 import { eq } from 'drizzle-orm';
+import { db } from '../db';
+import { env } from '../env';
+import Stripe from 'stripe';
 
 // Initialize Stripe with secret key from validated env
 const isDevelopment = process.env.NODE_ENV === 'development';
@@ -18,6 +18,11 @@ export class StripeService {
   static async createCustomer(userId: number, email: string, businessName: string) {
     this.checkStripe();
     if (isDevelopment) {
+      console.log('Development mode: Creating mock customer');
+      await db
+        .update(users)
+        .set({ stripeCustomerId: `cus_mock_${userId}` })
+        .where(eq(users.id, userId));
       return { id: `cus_mock_${userId}` };
     }
 
@@ -39,22 +44,57 @@ export class StripeService {
 
   static async createSubscription(
     userId: number,
-    planId: number,
+    planId: string,
     paymentMethodId: string
   ) {
     this.checkStripe();
 
+    console.log('Creating subscription:', { userId, planId, isDevelopment });
+
+    // Get user and ensure they have a customer ID
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // If no customer ID exists, create one
+    if (!user.stripeCustomerId) {
+      console.log('No customer ID found, creating one...');
+      await this.createCustomer(userId, user.username, user.businessName);
+      // Refresh user data
+      const updatedUser = await db.query.users.findFirst({
+        where: eq(users.id, userId),
+      });
+      if (!updatedUser?.stripeCustomerId) {
+        throw new Error('Failed to create customer');
+      }
+      user.stripeCustomerId = updatedUser.stripeCustomerId;
+    }
+
+    // Get the subscription plan details
+    const plan = await db.query.subscriptionPlans.findFirst({
+      where: eq(subscriptionPlans.stripePriceId, planId),
+    });
+
+    if (!plan) {
+      console.log('Available plans:', await db.query.subscriptionPlans.findMany());
+      throw new Error(`Invalid subscription plan: ${planId}`);
+    }
+
+    console.log('Found subscription plan:', plan);
+
     // In development, return mock subscription
     if (isDevelopment) {
-      const plan = await db.query.subscriptionPlans.findFirst({
-        where: eq(subscriptionPlans.id, planId),
-      });
+      console.log('Development mode: Creating mock subscription');
 
       await db
         .update(users)
         .set({
           stripeSubscriptionId: `sub_mock_${userId}`,
-          subscriptionPlan: plan?.name || 'test_plan',
+          subscriptionPlan: plan.name,
           subscriptionStatus: 'active',
         })
         .where(eq(users.id, userId));
@@ -68,22 +108,6 @@ export class StripeService {
           }
         }
       };
-    }
-
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, userId),
-    });
-
-    if (!user?.stripeCustomerId) {
-      throw new Error('User does not have a Stripe customer ID');
-    }
-
-    const plan = await db.query.subscriptionPlans.findFirst({
-      where: eq(subscriptionPlans.id, planId),
-    });
-
-    if (!plan?.stripePriceId) {
-      throw new Error('Invalid subscription plan');
     }
 
     // Create subscription with Stripe
@@ -107,6 +131,11 @@ export class StripeService {
         subscriptionStatus: subscription.status,
       })
       .where(eq(users.id, userId));
+
+    console.log('Subscription created successfully:', {
+      id: subscription.id,
+      status: subscription.status
+    });
 
     return subscription;
   }
@@ -151,6 +180,7 @@ export class StripeService {
         env.STRIPE_WEBHOOK_SECRET
       );
 
+      console.log('Processing Stripe webhook:', event.type);
       const { object } = event.data;
 
       switch (event.type) {
@@ -176,10 +206,9 @@ export class StripeService {
 
             if (user) {
               await db.insert(payments).values({
-                id: undefined,
                 userId: user.id,
                 stripePaymentIntentId: invoice.payment_intent as string,
-                amount: invoice.amount_paid / 100, // Convert from cents to dollars
+                amount: (invoice.amount_paid / 100).toString(), // Convert from cents to dollars and to string for decimal column
                 status: 'succeeded',
                 createdAt: new Date(),
               });
@@ -197,10 +226,9 @@ export class StripeService {
 
             if (user) {
               await db.insert(payments).values({
-                id: undefined,
                 userId: user.id,
                 stripePaymentIntentId: invoice.payment_intent as string,
-                amount: invoice.amount_due / 100,
+                amount: (invoice.amount_due / 100).toString(), // Convert from cents to dollars and to string for decimal column
                 status: 'failed',
                 createdAt: new Date(),
               });

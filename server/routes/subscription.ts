@@ -29,11 +29,22 @@ router.post('/create', async (req, res) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
+    console.log('Creating subscription:', {
+      userId,
+      planId,
+      isDevelopment: process.env.NODE_ENV === 'development'
+    });
+
     const subscription = await StripeService.createSubscription(
       userId,
       planId,
       paymentMethodId
     );
+
+    console.log('Subscription created:', {
+      id: subscription.id,
+      status: subscription.status
+    });
 
     // Return a proper JSON response
     res.json({

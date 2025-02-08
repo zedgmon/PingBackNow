@@ -5,15 +5,16 @@ import { env } from '../env';
 import Stripe from 'stripe';
 
 // Initialize Stripe with secret key from validated env
-const isDevelopment = process.env.NODE_ENV === 'development';
 const stripe = env.STRIPE_SECRET_KEY ? new Stripe(env.STRIPE_SECRET_KEY, {
-  apiVersion: '2023-10-16'
+  apiVersion: '2025-01-27.acacia'
 }) : undefined;
+
+const isDevelopment = process.env.NODE_ENV === 'development';
 
 export class StripeService {
   private static checkStripe() {
     if (!stripe && !isDevelopment) {
-      throw new Error('Stripe is not configured properly. Please check your environment variables.');
+      throw new Error('Stripe is not configured. Please check your environment variables.');
     }
   }
 
@@ -85,26 +86,16 @@ export class StripeService {
         user.stripeCustomerId = updatedUser.stripeCustomerId;
       }
 
-      // Get the subscription plan details
-      const [plan] = await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.stripePriceId, planId));
-
-      if (!plan) {
-        console.log('Available plans:', await db.select().from(subscriptionPlans));
-        throw new Error(`Invalid subscription plan: ${planId}`);
-      }
-
-      console.log('Found subscription plan:', plan);
-
-      // In development, return mock subscription
+      // In development mode, create a mock subscription
       if (isDevelopment) {
         console.log('Development mode: Creating mock subscription');
         const mockSubscriptionId = `sub_mock_${userId}`;
 
+        // Update user subscription status
         await db
           .update(users)
           .set({
             stripeSubscriptionId: mockSubscriptionId,
-            subscriptionPlan: plan.name,
             subscriptionStatus: 'active',
           })
           .where(eq(users.id, userId));
@@ -118,6 +109,13 @@ export class StripeService {
             }
           }
         };
+      }
+
+      // Get the subscription plan details
+      const [plan] = await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.stripePriceId, planId));
+
+      if (!plan) {
+        throw new Error(`Invalid subscription plan: ${planId}`);
       }
 
       this.checkStripe();
@@ -139,15 +137,9 @@ export class StripeService {
         .update(users)
         .set({
           stripeSubscriptionId: subscription.id,
-          subscriptionPlan: plan.name,
           subscriptionStatus: subscription.status,
         })
         .where(eq(users.id, userId));
-
-      console.log('Subscription created successfully:', {
-        id: subscription.id,
-        status: subscription.status
-      });
 
       return subscription;
     } catch (error) {

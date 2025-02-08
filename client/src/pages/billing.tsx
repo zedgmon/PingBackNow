@@ -33,26 +33,18 @@ import { useForm } from "react-hook-form";
 
 // Initialize Stripe with better error handling
 const isDevelopment = import.meta.env.MODE === 'development';
-const stripePublishableKey = isDevelopment
-  ? (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || import.meta.env.VITE_STRIPE_MOCK_KEY)
-  : import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
 
 console.log('Stripe Config:', {
   isDevelopment,
   hasPublishableKey: !!stripePublishableKey,
   mode: import.meta.env.MODE,
   key: stripePublishableKey ? stripePublishableKey.substring(0, 8) + '...' : 'not set',
-  usingMockKey: stripePublishableKey === import.meta.env.VITE_STRIPE_MOCK_KEY
 });
 
 let stripePromise: Promise<any> | null = null;
 const getStripe = async () => {
   if (!stripePromise) {
-    if (isDevelopment) {
-      console.log('Development mode: Using mock Stripe');
-      return null;
-    }
-
     if (!stripePublishableKey) {
       console.error('Stripe publishable key is missing');
       return null;
@@ -83,7 +75,7 @@ const plans = [
       "Email support",
     ],
     priceId: "starter",
-    stripePriceId: "price_H5rlYOyNvVih2d", // Test price ID
+    stripePriceId: isDevelopment ? "price_mock_starter" : "price_1Nz2VKCDMMERRP2nLvNkfjX8", // Test price ID
   },
   {
     name: "Growth",
@@ -97,7 +89,7 @@ const plans = [
       "Custom auto-response messages",
     ],
     priceId: "growth",
-    stripePriceId: "price_H5rlZPzNwXij3e", // Test price ID
+    stripePriceId: isDevelopment ? "price_mock_growth" : "price_1Nz2VKCDMMERRP2nKvNkfjY9", // Test price ID
   },
   {
     name: "Pro",
@@ -112,7 +104,7 @@ const plans = [
       "Dedicated account manager",
     ],
     priceId: "pro",
-    stripePriceId: "price_H5rlXQyMuWik4f", // Test price ID
+    stripePriceId: isDevelopment ? "price_mock_pro" : "price_1Nz2VKCDMMERRP2nMvNkfjZ0", // Test price ID
   },
 ];
 

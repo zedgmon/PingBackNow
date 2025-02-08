@@ -90,8 +90,8 @@ export class StripeService {
       if (isDevelopment) {
         console.log('Development mode: Setting up mock subscription');
 
-        // Create or get mock plan
-        const mockPlanName = planId.replace('price_mock_', '').toUpperCase();
+        // First, try to find existing mock plan
+        console.log('Searching for mock plan with ID:', planId);
         let plan = await db
           .select()
           .from(subscriptionPlans)
@@ -100,22 +100,34 @@ export class StripeService {
 
         if (!plan) {
           // Create mock plan if it doesn't exist
-          console.log('Creating mock plan:', mockPlanName);
-          const mockPlanData = {
-            name: mockPlanName,
-            stripePriceId: planId,
-            features: JSON.stringify(['Mock feature 1', 'Mock feature 2']),
-            pricePerMonth: mockPlanName === 'STARTER' ? '49.99' : 
-                          mockPlanName === 'GROWTH' ? '99.99' : '199.99',
-            messageCredits: mockPlanName === 'STARTER' ? 500 : 
-                          mockPlanName === 'GROWTH' ? 1500 : 5000,
-            active: true
-          };
+          const mockPlanName = planId.replace('price_mock_', '').toUpperCase();
+          console.log('Creating new mock plan:', mockPlanName);
 
-          [plan] = await db
-            .insert(subscriptionPlans)
-            .values(mockPlanData)
-            .returning();
+          try {
+            [plan] = await db.insert(subscriptionPlans)
+              .values({
+                name: mockPlanName,
+                stripePriceId: planId,
+                features: JSON.stringify(['Mock feature 1', 'Mock feature 2']),
+                pricePerMonth: mockPlanName === 'STARTER' ? '49.99' : 
+                              mockPlanName === 'GROWTH' ? '99.99' : '199.99',
+                messageCredits: mockPlanName === 'STARTER' ? 500 : 
+                              mockPlanName === 'GROWTH' ? 1500 : 5000,
+                active: true,
+              })
+              .returning();
+
+            console.log('Successfully created mock plan:', plan);
+          } catch (error) {
+            console.error('Error creating mock plan:', error);
+            throw new Error(`Failed to create mock plan: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          }
+        } else {
+          console.log('Found existing mock plan:', plan);
+        }
+
+        if (!plan) {
+          throw new Error('Failed to create or retrieve mock plan');
         }
 
         const mockSubscriptionId = `sub_mock_${userId}`;
@@ -181,7 +193,6 @@ export class StripeService {
       throw error;
     }
   }
-
   static async cancelSubscription(userId: number) {
     try {
       if (isDevelopment) {

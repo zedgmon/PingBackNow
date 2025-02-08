@@ -6,17 +6,20 @@ import Stripe from 'stripe';
 
 // Initialize Stripe with secret key from validated env
 const isDevelopment = process.env.NODE_ENV === 'development';
-const stripe = env.STRIPE_SECRET_KEY ? new Stripe(env.STRIPE_SECRET_KEY) : undefined;
+const stripe = env.STRIPE_SECRET_KEY ? new Stripe(env.STRIPE_SECRET_KEY, {
+  apiVersion: '2023-10-16' // Use latest API version
+}) : undefined;
 
 export class StripeService {
   private static checkStripe() {
     if (!stripe && !isDevelopment) {
-      throw new Error('Stripe is not configured. Please set up your Stripe environment variables.');
+      throw new Error('Stripe is not configured properly. Please check your environment variables.');
     }
   }
 
   static async createCustomer(userId: number, email: string, businessName: string) {
     try {
+      // In development mode, just create a mock customer ID
       if (isDevelopment) {
         console.log('Development mode: Creating mock customer');
         const mockCustomerId = `cus_mock_${userId}`;
@@ -27,8 +30,14 @@ export class StripeService {
         return { id: mockCustomerId };
       }
 
+      // In production, validate Stripe configuration
       this.checkStripe();
-      const customer = await stripe!.customers.create({
+
+      if (!stripe) {
+        throw new Error('Stripe is not initialized');
+      }
+
+      const customer = await stripe.customers.create({
         email,
         name: businessName,
         metadata: {

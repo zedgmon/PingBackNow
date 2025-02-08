@@ -7,7 +7,7 @@ import Stripe from 'stripe';
 // Initialize Stripe with secret key from validated env
 const isDevelopment = process.env.NODE_ENV === 'development';
 const stripe = env.STRIPE_SECRET_KEY ? new Stripe(env.STRIPE_SECRET_KEY, {
-  apiVersion: '2023-10-16' // Use latest API version
+  apiVersion: '2023-10-16'
 }) : undefined;
 
 export class StripeService {
@@ -67,9 +67,7 @@ export class StripeService {
       console.log('Creating subscription:', { userId, planId, isDevelopment });
 
       // Get user and ensure they have a customer ID
-      const user = await db.query.users.findFirst({
-        where: eq(users.id, userId),
-      });
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
 
       if (!user) {
         throw new Error('User not found');
@@ -80,9 +78,7 @@ export class StripeService {
         console.log('No customer ID found, creating one with email:', email);
         await this.createCustomer(userId, email, user.businessName);
         // Refresh user data
-        const updatedUser = await db.query.users.findFirst({
-          where: eq(users.id, userId),
-        });
+        const [updatedUser] = await db.select().from(users).where(eq(users.id, userId));
         if (!updatedUser?.stripeCustomerId) {
           throw new Error('Failed to create customer');
         }
@@ -90,12 +86,10 @@ export class StripeService {
       }
 
       // Get the subscription plan details
-      const plan = await db.query.subscriptionPlans.findFirst({
-        where: eq(subscriptionPlans.stripePriceId, planId),
-      });
+      const [plan] = await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.stripePriceId, planId));
 
       if (!plan) {
-        console.log('Available plans:', await db.query.subscriptionPlans.findMany());
+        console.log('Available plans:', await db.select().from(subscriptionPlans));
         throw new Error(`Invalid subscription plan: ${planId}`);
       }
 
@@ -176,9 +170,8 @@ export class StripeService {
       }
 
       this.checkStripe();
-      const user = await db.query.users.findFirst({
-        where: eq(users.id, userId),
-      });
+
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
 
       if (!user?.stripeSubscriptionId) {
         throw new Error('No active subscription found');
@@ -242,9 +235,7 @@ export class StripeService {
         case 'invoice.paid': {
           const invoice = object as Stripe.Invoice;
           if (invoice.customer) {
-            const user = await db.query.users.findFirst({
-              where: eq(users.stripeCustomerId, invoice.customer as string),
-            });
+            const [user] = await db.select().from(users).where(eq(users.stripeCustomerId, invoice.customer as string));
 
             if (user) {
               await db.insert(payments).values({
@@ -262,9 +253,7 @@ export class StripeService {
         case 'invoice.payment_failed': {
           const invoice = object as Stripe.Invoice;
           if (invoice.customer) {
-            const user = await db.query.users.findFirst({
-              where: eq(users.stripeCustomerId, invoice.customer as string),
-            });
+            const [user] = await db.select().from(users).where(eq(users.stripeCustomerId, invoice.customer as string));
 
             if (user) {
               await db.insert(payments).values({

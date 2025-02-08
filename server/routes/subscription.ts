@@ -46,11 +46,11 @@ router.post('/create', async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Update user's email if not set
+    // Store email in user record if not set
     if (!user.email) {
       await db
         .update(users)
-        .set({ email })
+        .set({ email: email })
         .where(eq(users.id, userId));
     }
 

@@ -18,15 +18,18 @@ import { CreditUsageChart } from "@/components/credit-usage-chart";
 import { loadStripe } from "@stripe/stripe-js";
 
 // Initialize Stripe with better error handling
+const isDevelopment = import.meta.env.DEV;
 const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
-if (!stripePublishableKey) {
-  console.error('Missing VITE_STRIPE_PUBLISHABLE_KEY environment variable');
-}
 
 let stripePromise: Promise<any> | null = null;
 const getStripe = () => {
-  if (!stripePromise && stripePublishableKey) {
-    stripePromise = loadStripe(stripePublishableKey);
+  if (!stripePromise) {
+    if (!stripePublishableKey && !isDevelopment) {
+      console.error('Missing VITE_STRIPE_PUBLISHABLE_KEY environment variable');
+      return null;
+    }
+    // In development, we can use a test key or skip Stripe initialization
+    stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : null;
   }
   return stripePromise;
 };

@@ -75,7 +75,7 @@ const plans = [
       "Email support",
     ],
     priceId: "starter",
-    stripePriceId: isDevelopment ? "price_mock_starter" : "price_1Nz2VKCDMMERRP2nLvNkfjX8", // Test price ID
+    stripePriceId: isDevelopment ? "price_mock_starter" : "price_1Nz2VKCDMMERRP2nLvNkfjX8",
   },
   {
     name: "Growth",
@@ -89,7 +89,7 @@ const plans = [
       "Custom auto-response messages",
     ],
     priceId: "growth",
-    stripePriceId: isDevelopment ? "price_mock_growth" : "price_1Nz2VKCDMMERRP2nKvNkfjY9", // Test price ID
+    stripePriceId: isDevelopment ? "price_mock_growth" : "price_1Nz2VKCDMMERRP2nKvNkfjY9",
   },
   {
     name: "Pro",
@@ -104,7 +104,7 @@ const plans = [
       "Dedicated account manager",
     ],
     priceId: "pro",
-    stripePriceId: isDevelopment ? "price_mock_pro" : "price_1Nz2VKCDMMERRP2nMvNkfjZ0", // Test price ID
+    stripePriceId: isDevelopment ? "price_mock_pro" : "price_1Nz2VKCDMMERRP2nMvNkfjZ0",
   },
 ];
 

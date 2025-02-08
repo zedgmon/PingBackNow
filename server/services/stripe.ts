@@ -86,16 +86,46 @@ export class StripeService {
         user.stripeCustomerId = updatedUser.stripeCustomerId;
       }
 
-      // In development mode, create a mock subscription
+      // In development mode, handle mock plans
       if (isDevelopment) {
-        console.log('Development mode: Creating mock subscription');
+        console.log('Development mode: Setting up mock subscription');
+
+        // Create or get mock plan
+        const mockPlanName = planId.replace('price_mock_', '').toUpperCase();
+        let plan = await db
+          .select()
+          .from(subscriptionPlans)
+          .where(eq(subscriptionPlans.stripePriceId, planId))
+          .then(rows => rows[0]);
+
+        if (!plan) {
+          // Create mock plan if it doesn't exist
+          console.log('Creating mock plan:', mockPlanName);
+          const mockPlanData = {
+            name: mockPlanName,
+            stripePriceId: planId,
+            features: JSON.stringify(['Mock feature 1', 'Mock feature 2']),
+            pricePerMonth: mockPlanName === 'STARTER' ? '49.99' : 
+                          mockPlanName === 'GROWTH' ? '99.99' : '199.99',
+            messageCredits: mockPlanName === 'STARTER' ? 500 : 
+                          mockPlanName === 'GROWTH' ? 1500 : 5000,
+            active: true
+          };
+
+          [plan] = await db
+            .insert(subscriptionPlans)
+            .values(mockPlanData)
+            .returning();
+        }
+
         const mockSubscriptionId = `sub_mock_${userId}`;
 
-        // Update user subscription status
+        // Update user subscription details
         await db
           .update(users)
           .set({
             stripeSubscriptionId: mockSubscriptionId,
+            subscriptionPlan: plan.name.toLowerCase(),
             subscriptionStatus: 'active',
           })
           .where(eq(users.id, userId));
@@ -111,8 +141,11 @@ export class StripeService {
         };
       }
 
-      // Get the subscription plan details
-      const [plan] = await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.stripePriceId, planId));
+      // Production mode: Get the subscription plan details
+      const [plan] = await db
+        .select()
+        .from(subscriptionPlans)
+        .where(eq(subscriptionPlans.stripePriceId, planId));
 
       if (!plan) {
         throw new Error(`Invalid subscription plan: ${planId}`);
@@ -137,6 +170,7 @@ export class StripeService {
         .update(users)
         .set({
           stripeSubscriptionId: subscription.id,
+          subscriptionPlan: plan.name.toLowerCase(),
           subscriptionStatus: subscription.status,
         })
         .where(eq(users.id, userId));

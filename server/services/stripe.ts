@@ -4,18 +4,24 @@ import { db } from '../db';
 import { users, subscriptionPlans, payments } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('STRIPE_SECRET_KEY environment variable is required');
-}
-
-// Initialize Stripe with secret key
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2023-10-16',
-});
+// Initialize Stripe with secret key from validated env
+const isDevelopment = process.env.NODE_ENV === 'development';
+const stripe = env.STRIPE_SECRET_KEY ? new Stripe(env.STRIPE_SECRET_KEY) : undefined;
 
 export class StripeService {
+  private static checkStripe() {
+    if (!stripe && !isDevelopment) {
+      throw new Error('Stripe is not configured. Please set up your Stripe environment variables.');
+    }
+  }
+
   static async createCustomer(userId: number, email: string, businessName: string) {
-    const customer = await stripe.customers.create({
+    this.checkStripe();
+    if (isDevelopment) {
+      return { id: `cus_mock_${userId}` };
+    }
+
+    const customer = await stripe!.customers.create({
       email,
       name: businessName,
       metadata: {
@@ -23,7 +29,6 @@ export class StripeService {
       },
     });
 
-    // Update user with Stripe customer ID
     await db
       .update(users)
       .set({ stripeCustomerId: customer.id })
@@ -37,6 +42,34 @@ export class StripeService {
     planId: number,
     paymentMethodId: string
   ) {
+    this.checkStripe();
+
+    // In development, return mock subscription
+    if (isDevelopment) {
+      const plan = await db.query.subscriptionPlans.findFirst({
+        where: eq(subscriptionPlans.id, planId),
+      });
+
+      await db
+        .update(users)
+        .set({
+          stripeSubscriptionId: `sub_mock_${userId}`,
+          subscriptionPlan: plan?.name || 'test_plan',
+          subscriptionStatus: 'active',
+        })
+        .where(eq(users.id, userId));
+
+      return {
+        id: `sub_mock_${userId}`,
+        status: 'active',
+        latest_invoice: {
+          payment_intent: {
+            client_secret: 'mock_client_secret'
+          }
+        }
+      };
+    }
+
     const user = await db.query.users.findFirst({
       where: eq(users.id, userId),
     });
@@ -53,20 +86,8 @@ export class StripeService {
       throw new Error('Invalid subscription plan');
     }
 
-    // Attach payment method to customer
-    await stripe.paymentMethods.attach(paymentMethodId, {
-      customer: user.stripeCustomerId,
-    });
-
-    // Set as default payment method
-    await stripe.customers.update(user.stripeCustomerId, {
-      invoice_settings: {
-        default_payment_method: paymentMethodId,
-      },
-    });
-
-    // Create subscription
-    const subscription = await stripe.subscriptions.create({
+    // Create subscription with Stripe
+    const subscription = await stripe!.subscriptions.create({
       customer: user.stripeCustomerId,
       items: [{ price: plan.stripePriceId }],
       payment_behavior: 'default_incomplete',
@@ -91,6 +112,9 @@ export class StripeService {
   }
 
   static async cancelSubscription(userId: number) {
+    this.checkStripe();
+    if (isDevelopment) return { status: 'cancelled', canceled_at: Date.now() };
+
     const user = await db.query.users.findFirst({
       where: eq(users.id, userId),
     });
@@ -99,7 +123,7 @@ export class StripeService {
       throw new Error('No active subscription found');
     }
 
-    const subscription = await stripe.subscriptions.cancel(user.stripeSubscriptionId);
+    const subscription = await stripe!.subscriptions.cancel(user.stripeSubscriptionId);
 
     await db
       .update(users)
@@ -115,15 +139,16 @@ export class StripeService {
     body: any,
     signature: string,
   ) {
+    this.checkStripe();
     try {
-      if (!process.env.STRIPE_WEBHOOK_SECRET) {
+      if (!env.STRIPE_WEBHOOK_SECRET) {
         throw new Error('STRIPE_WEBHOOK_SECRET environment variable is required');
       }
 
-      const event = stripe.webhooks.constructEvent(
+      const event = stripe!.webhooks.constructEvent(
         body,
         signature,
-        process.env.STRIPE_WEBHOOK_SECRET
+        env.STRIPE_WEBHOOK_SECRET
       );
 
       const { object } = event.data;
@@ -151,6 +176,7 @@ export class StripeService {
 
             if (user) {
               await db.insert(payments).values({
+                id: undefined,
                 userId: user.id,
                 stripePaymentIntentId: invoice.payment_intent as string,
                 amount: invoice.amount_paid / 100, // Convert from cents to dollars
@@ -171,6 +197,7 @@ export class StripeService {
 
             if (user) {
               await db.insert(payments).values({
+                id: undefined,
                 userId: user.id,
                 stripePaymentIntentId: invoice.payment_intent as string,
                 amount: invoice.amount_due / 100,

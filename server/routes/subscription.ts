@@ -1,8 +1,9 @@
 import express from 'express';
 import { StripeService } from '../services/stripe';
 import { db } from '../db';
-import { subscriptionPlans } from '@shared/schema';
+import { users, subscriptionPlans } from '@shared/schema';
 import { env } from '../env';
+import { eq } from 'drizzle-orm';
 
 const router = express.Router();
 
@@ -10,7 +11,7 @@ const router = express.Router();
 router.get('/plans', async (req, res) => {
   try {
     const plans = await db.query.subscriptionPlans.findMany({
-      where: (plans) => plans.active.equals(true),
+      where: (plans) => eq(plans.active, true),
     });
     res.json(plans);
   } catch (error) {
@@ -22,23 +23,46 @@ router.get('/plans', async (req, res) => {
 // Create new subscription
 router.post('/create', async (req, res) => {
   try {
-    const { planId, paymentMethodId } = req.body;
+    const { planId, paymentMethodId, email } = req.body;
     const userId = req.user?.id;
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required for subscription' });
+    }
+
     console.log('Creating subscription:', {
       userId,
       planId,
+      email,
       isDevelopment: process.env.NODE_ENV === 'development'
     });
+
+    // Get user details
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Update user's email if not set
+    if (!user.email) {
+      await db
+        .update(users)
+        .set({ email })
+        .where(eq(users.id, userId));
+    }
 
     const subscription = await StripeService.createSubscription(
       userId,
       planId,
-      paymentMethodId
+      paymentMethodId,
+      email
     );
 
     console.log('Subscription created:', {
@@ -46,7 +70,6 @@ router.post('/create', async (req, res) => {
       status: subscription.status
     });
 
-    // Return a proper JSON response
     res.json({
       subscriptionId: subscription.id,
       status: subscription.status,

@@ -16,10 +16,24 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { CreditUsageChart } from "@/components/credit-usage-chart";
 import { loadStripe } from "@stripe/stripe-js";
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 
 // Initialize Stripe with better error handling
 const isDevelopment = import.meta.env.MODE === 'development';
-const stripePublishableKey = isDevelopment 
+const stripePublishableKey = isDevelopment
   ? (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || import.meta.env.VITE_STRIPE_MOCK_KEY)
   : import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
 
@@ -102,22 +116,34 @@ const plans = [
   },
 ];
 
+const emailSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+});
+
+type EmailFormData = z.infer<typeof emailSchema>;
+
 export default function Billing() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
+
+  const form = useForm<EmailFormData>({
+    resolver: zodResolver(emailSchema),
+  });
 
   const subscribeMutation = useMutation({
-    mutationFn: async (planId: string) => {
+    mutationFn: async ({ planId, email }: { planId: string; email: string }) => {
       try {
         console.log('Starting subscription process...', { isDevelopment, hasPublishableKey: !!stripePublishableKey });
 
         const stripe = await getStripe();
         if (!stripe) {
           if (isDevelopment) {
-            // In development, we can mock the subscription
             console.log('Development mode: mocking subscription');
-            const response = await apiRequest("POST", "/api/subscribe/create", { 
+            const response = await apiRequest("POST", "/api/subscribe/create", {
               planId,
+              email,
               paymentMethodId: 'mock_pm_123'
             });
             return response.json();
@@ -125,10 +151,10 @@ export default function Billing() {
           throw new Error('Stripe failed to initialize. Please check if the publishable key is set correctly.');
         }
 
-        // Create subscription with real Stripe integration
-        const response = await apiRequest("POST", "/api/subscribe/create", { 
+        const response = await apiRequest("POST", "/api/subscribe/create", {
           planId,
-          paymentMethodId: 'mock_pm_123' // For testing, replace with real payment method in production
+          email,
+          paymentMethodId: 'mock_pm_123'
         });
 
         const data = await response.json();
@@ -143,9 +169,10 @@ export default function Billing() {
       }
     },
     onSuccess: () => {
+      setShowEmailDialog(false);
       toast({
         title: "Subscription created",
-        description: isDevelopment 
+        description: isDevelopment
           ? "Test subscription created successfully."
           : "Your subscription has been created successfully.",
       });
@@ -159,6 +186,17 @@ export default function Billing() {
       });
     },
   });
+
+  const handleSubscribe = (planId: string) => {
+    setSelectedPlan(planId);
+    setShowEmailDialog(true);
+  };
+
+  const onSubmitEmail = (data: EmailFormData) => {
+    if (selectedPlan) {
+      subscribeMutation.mutate({ planId: selectedPlan, email: data.email });
+    }
+  };
 
   return (
     <DashboardShell>
@@ -227,7 +265,7 @@ export default function Billing() {
               <CardFooter>
                 <Button
                   className="w-full"
-                  onClick={() => subscribeMutation.mutate(plan.stripePriceId)}
+                  onClick={() => handleSubscribe(plan.stripePriceId)}
                   disabled={
                     subscribeMutation.isPending ||
                     user?.subscriptionPlan === plan.priceId
@@ -289,6 +327,38 @@ export default function Billing() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Email Collection Dialog */}
+      <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Enter Your Email</DialogTitle>
+            <DialogDescription>
+              Please provide your email address to continue with the subscription.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmitEmail)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="email" placeholder="your@email.com" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button type="submit" className="w-full" disabled={subscribeMutation.isPending}>
+                {subscribeMutation.isPending ? "Processing..." : "Continue"}
+              </Button>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </DashboardShell>
   );
 }

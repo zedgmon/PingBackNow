@@ -60,7 +60,8 @@ export class StripeService {
   static async createSubscription(
     userId: number,
     planId: string,
-    paymentMethodId: string
+    paymentMethodId: string,
+    email: string
   ) {
     try {
       console.log('Creating subscription:', { userId, planId, isDevelopment });
@@ -74,10 +75,10 @@ export class StripeService {
         throw new Error('User not found');
       }
 
-      // If no customer ID exists, create one
+      // If no customer ID exists, create one with the provided email
       if (!user.stripeCustomerId) {
-        console.log('No customer ID found, creating one...');
-        await this.createCustomer(userId, user.username, user.businessName);
+        console.log('No customer ID found, creating one with email:', email);
+        await this.createCustomer(userId, email, user.businessName);
         // Refresh user data
         const updatedUser = await db.query.users.findFirst({
           where: eq(users.id, userId),

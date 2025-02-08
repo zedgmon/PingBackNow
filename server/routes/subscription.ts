@@ -10,9 +10,7 @@ const router = express.Router();
 // Get available subscription plans
 router.get('/plans', async (req, res) => {
   try {
-    const plans = await db.query.subscriptionPlans.findMany({
-      where: (plans) => eq(plans.active, true),
-    });
+    const plans = await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.active, true));
     res.json(plans);
   } catch (error) {
     console.error('Error fetching subscription plans:', error);
@@ -42,9 +40,7 @@ router.post('/create', async (req, res) => {
     });
 
     // Get user details
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, userId),
-    });
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -118,7 +114,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
     res.json(result);
   } catch (error) {
     console.error('Webhook error:', error);
-    res.status(400).json({ 
+    res.status(500).json({ 
       error: error instanceof Error ? error.message : 'Webhook Error'
     });
   }

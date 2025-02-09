@@ -23,37 +23,66 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    // Convert the input username to lowercase and use case-insensitive comparison
-    const lowercaseUsername = username.toLowerCase();
+  async getUserByEmail(email: string): Promise<User | undefined> {
     const [user] = await db
       .select()
       .from(users)
-      .where(sql`LOWER(${users.username}) = ${lowercaseUsername}`);
+      .where(eq(users.email, email.toLowerCase()));
     return user;
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    // Store username in lowercase format
-    const userWithLowercaseUsername = {
+  async getUserByVerificationToken(token: string): Promise<User | undefined> {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.verificationToken, token));
+    return user;
+  }
+
+  async createUser(insertUser: InsertUser & { 
+    verificationToken: string;
+    verificationTokenExpiry: Date;
+    emailVerified: boolean;
+  }): Promise<User> {
+    const [user] = await db.insert(users).values({
       ...insertUser,
-      username: insertUser.username.toLowerCase(),
-    };
-    const [user] = await db.insert(users).values(userWithLowercaseUsername).returning();
+      email: insertUser.email.toLowerCase(),
+    }).returning();
     return user;
   }
 
   async updateUser(id: number, updates: Partial<User>): Promise<User> {
-    // If username is being updated, ensure it's stored in lowercase
-    if (updates.username) {
-      updates.username = updates.username.toLowerCase();
-    }
     const [user] = await db
       .update(users)
       .set(updates)
       .where(eq(users.id, id))
       .returning();
     return user;
+  }
+
+  async verifyEmail(userId: number): Promise<void> {
+    await db
+      .update(users)
+      .set({
+        emailVerified: true,
+        verificationToken: null,
+        verificationTokenExpiry: null,
+      })
+      .where(eq(users.id, userId));
+  }
+
+  async updateVerificationToken(
+    userId: number,
+    token: string,
+    expiry: Date
+  ): Promise<void> {
+    await db
+      .update(users)
+      .set({
+        verificationToken: token,
+        verificationTokenExpiry: expiry,
+      })
+      .where(eq(users.id, userId));
   }
 
   async getAllUsers(): Promise<User[]> {
@@ -214,17 +243,19 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getSpreadsheetId(): Promise<string | null> {
+  async getSpreadsheetId(): Promise<string> {
     try {
       const sheetsService = getGoogleSheetsService();
-      return sheetsService.getSpreadsheetId();
+      const id = sheetsService.getSpreadsheetId();
+      if (!id) throw new Error('Spreadsheet ID not found');
+      return id;
     } catch (error) {
       console.error('Error getting spreadsheet ID:', error);
-      return null;
+      throw error;
     }
   }
 
-  // Add new notification methods
+  // Notifications
   async getNotificationsByUserId(userId: number): Promise<Notification[]> {
     return await db
       .select()

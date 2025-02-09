@@ -1,5 +1,5 @@
 import { useAuth } from "@/hooks/use-auth";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -23,6 +23,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Logo } from "@/components/ui/logo";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface AuthPageProps {
   defaultTab?: "login" | "register";
@@ -31,6 +34,8 @@ interface AuthPageProps {
 export default function AuthPage({ defaultTab = "login" }: AuthPageProps) {
   const { user, loginMutation, registerMutation } = useAuth();
   const [, navigate] = useLocation();
+  const { toast } = useToast();
+  const [showVerificationPrompt, setShowVerificationPrompt] = useState(false);
 
   // Redirect if logged in
   useEffect(() => {
@@ -39,10 +44,30 @@ export default function AuthPage({ defaultTab = "login" }: AuthPageProps) {
     }
   }, [user, navigate]);
 
+  const resendVerificationMutation = useMutation({
+    mutationFn: async (email: string) => {
+      const res = await apiRequest("POST", "/api/resend-verification", { email });
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Verification email sent",
+        description: "Please check your email for the verification link.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const loginForm = useForm({
-    resolver: zodResolver(insertUserSchema.pick({ username: true, password: true })),
+    resolver: zodResolver(insertUserSchema.pick({ email: true, password: true })),
     defaultValues: {
-      username: "",
+      email: "",
       password: "",
     },
   });
@@ -50,11 +75,21 @@ export default function AuthPage({ defaultTab = "login" }: AuthPageProps) {
   const registerForm = useForm({
     resolver: zodResolver(insertUserSchema),
     defaultValues: {
-      username: "",
+      email: "",
       password: "",
       businessName: "",
     },
   });
+
+  const handleLoginSubmit = async (data: { email: string; password: string }) => {
+    try {
+      await loginMutation.mutateAsync(data);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("verify your email")) {
+        setShowVerificationPrompt(true);
+      }
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -95,19 +130,17 @@ export default function AuthPage({ defaultTab = "login" }: AuthPageProps) {
                 <TabsContent value="login">
                   <Form {...loginForm}>
                     <form
-                      onSubmit={loginForm.handleSubmit((data) =>
-                        loginMutation.mutate(data)
-                      )}
+                      onSubmit={loginForm.handleSubmit(handleLoginSubmit)}
                       className="space-y-4"
                     >
                       <FormField
                         control={loginForm.control}
-                        name="username"
+                        name="email"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Username</FormLabel>
+                            <FormLabel>Email</FormLabel>
                             <FormControl>
-                              <Input {...field} />
+                              <Input type="email" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -133,6 +166,25 @@ export default function AuthPage({ defaultTab = "login" }: AuthPageProps) {
                       >
                         {loginMutation.isPending ? "Signing in..." : "Sign in"}
                       </Button>
+                      {showVerificationPrompt && (
+                        <div className="mt-4 text-center">
+                          <p className="text-sm text-gray-600 mb-2">
+                            Please verify your email before logging in.
+                          </p>
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              const email = loginForm.getValues("email");
+                              if (email) {
+                                resendVerificationMutation.mutate(email);
+                              }
+                            }}
+                            disabled={resendVerificationMutation.isPending}
+                          >
+                            Resend verification email
+                          </Button>
+                        </div>
+                      )}
                     </form>
                   </Form>
                 </TabsContent>
@@ -147,12 +199,12 @@ export default function AuthPage({ defaultTab = "login" }: AuthPageProps) {
                     >
                       <FormField
                         control={registerForm.control}
-                        name="username"
+                        name="email"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Username</FormLabel>
+                            <FormLabel>Email</FormLabel>
                             <FormControl>
-                              <Input {...field} />
+                              <Input type="email" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>

@@ -1,10 +1,10 @@
 import { IStorage } from "./types";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import session from "express-session";
 import createMemoryStore from "memorystore";
 import { users, missedCalls, scheduledMessages, leads, conversations, messages, messageUsage, notifications } from "@shared/schema";
-import type { User, InsertUser, MissedCall, ScheduledMessage, Lead, Conversation, Message, MessageUsage, Notification, InsertNotification } from "@shared/schema";
+import type { User, InsertUser, MissedCall, ScheduledMessage, Lead, Conversation, Message, MessageUsage, Notification } from "@shared/schema";
 import { GoogleSheetsService, initGoogleSheetsService, getGoogleSheetsService } from './google-sheets-service';
 
 const MemoryStore = createMemoryStore(session);
@@ -24,16 +24,30 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
+    // Convert the input username to lowercase and use case-insensitive comparison
+    const lowercaseUsername = username.toLowerCase();
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(sql`LOWER(${users.username}) = ${lowercaseUsername}`);
     return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(insertUser).returning();
+    // Store username in lowercase format
+    const userWithLowercaseUsername = {
+      ...insertUser,
+      username: insertUser.username.toLowerCase(),
+    };
+    const [user] = await db.insert(users).values(userWithLowercaseUsername).returning();
     return user;
   }
 
   async updateUser(id: number, updates: Partial<User>): Promise<User> {
+    // If username is being updated, ensure it's stored in lowercase
+    if (updates.username) {
+      updates.username = updates.username.toLowerCase();
+    }
     const [user] = await db
       .update(users)
       .set(updates)

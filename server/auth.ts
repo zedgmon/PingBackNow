@@ -47,7 +47,8 @@ export function setupAuth(app: Express) {
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
-        const user = await storage.getUserByUsername(username);
+        // Username is case-insensitive (converted to lowercase)
+        const user = await storage.getUserByUsername(username.toLowerCase());
         if (!user || !(await comparePasswords(password, user.password))) {
           return done(null, false, { message: "Invalid username or password" });
         }
@@ -69,20 +70,26 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/register", async (req, res, next) => {
-    const existingUser = await storage.getUserByUsername(req.body.username);
+    // Convert username to lowercase before checking for existing user
+    const existingUser = await storage.getUserByUsername(req.body.username.toLowerCase());
     if (existingUser) {
       return res.status(400).send("Username already exists");
     }
 
-    const user = await storage.createUser({
-      ...req.body,
-      password: await hashPassword(req.body.password),
-    });
+    try {
+      const user = await storage.createUser({
+        ...req.body,
+        username: req.body.username.toLowerCase(), // Ensure username is stored in lowercase
+        password: await hashPassword(req.body.password),
+      });
 
-    req.login(user, (err) => {
-      if (err) return next(err);
-      res.status(201).json(user);
-    });
+      req.login(user, (err) => {
+        if (err) return next(err);
+        res.status(201).json(user);
+      });
+    } catch (error) {
+      next(error);
+    }
   });
 
   app.post("/api/login", passport.authenticate("local"), (req, res) => {

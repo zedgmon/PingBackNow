@@ -191,50 +191,6 @@ export default function Billing() {
     },
   });
 
-  const cancelSubscriptionMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/subscribe/cancel");
-      if (!response.ok) {
-        const data = await response.json();
-        if (response.status === 401) {
-          throw new Error("Please log in to cancel your subscription.");
-        } else if (response.status === 404) {
-          throw new Error("User account not found. Please try logging in again.");
-        } else if (response.status === 400) {
-          throw new Error(data.error || "No active subscription found for this account.");
-        }
-        throw new Error(data.error || "Failed to cancel subscription");
-      }
-      const data = await response.json();
-      return data;
-    },
-    onSuccess: (data) => {
-      setShowCancelDialog(false);
-      toast({
-        title: "Subscription cancelled",
-        description: data.message || "Your subscription has been cancelled successfully. You'll have access until the end of your current billing period.",
-      });
-
-      // Update UI to show cancellation status
-      if (user) {
-        user.subscriptionStatus = 'canceled';
-      }
-    },
-    onError: (error: Error) => {
-      console.error('Cancellation error:', error);
-      toast({
-        title: "Cancellation error",
-        description: error.message,
-        variant: "destructive",
-      });
-
-      // Close dialog only for auth errors to allow retry for other errors
-      if (error.message.includes("Please log in")) {
-        setShowCancelDialog(false);
-      }
-    },
-  });
-
   const handleSubscribe = (planId: string) => {
     setSelectedPlan(planId);
     setShowEmailDialog(true);
@@ -248,6 +204,34 @@ export default function Billing() {
 
   const handleCancelSubscription = () => {
     setShowCancelDialog(true);
+  };
+
+  const handleCancelConfirm = () => {
+    setShowCancelDialog(false);
+    // Create mailto link with pre-filled subject
+    const email = 'pingback.billing@gmail.com';
+    const subject = 'Subscription Cancellation Request';
+    window.location.href = `mailto:${email}?subject=${encodeURIComponent(subject)}`;
+
+    toast({
+      title: "Cancellation Instructions",
+      description: (
+        <div className="space-y-2">
+          <p>To cancel your subscription, please email us at{' '}
+            <a 
+              href={`mailto:${email}?subject=${encodeURIComponent(subject)}`}
+              className="text-primary hover:underline"
+            >
+              {email}
+            </a>
+          </p>
+          <p>Include your registered email address in the email.</p>
+          <p>Our team will process your request within 24-48 hours.</p>
+          <p>You will retain access to your subscription until the end of your current billing cycle.</p>
+        </div>
+      ),
+      duration: 10000, // Show for 10 seconds
+    });
   };
 
   return (
@@ -291,13 +275,8 @@ export default function Billing() {
                 variant="outline"
                 className="w-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
                 onClick={handleCancelSubscription}
-                disabled={!user || cancelSubscriptionMutation.isPending || user.subscriptionStatus === 'canceled'}
               >
-                {cancelSubscriptionMutation.isPending
-                  ? "Cancelling..."
-                  : user?.subscriptionStatus === 'canceled'
-                    ? "Subscription Cancelled"
-                    : "Cancel Subscription"}
+                Cancel Subscription
               </Button>
             </CardFooter>
           </Card>
@@ -431,18 +410,24 @@ export default function Billing() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Cancel Subscription</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to cancel your subscription? You'll continue to have access until the end of your current billing period.
+            <AlertDialogDescription className="space-y-2">
+              <p>To cancel your subscription, please email us at{' '}
+                <a 
+                  href={`mailto:pingback.billing@gmail.com?subject=${encodeURIComponent('Subscription Cancellation Request')}`}
+                  className="text-primary hover:underline"
+                >
+                  pingback.billing@gmail.com
+                </a>
+              </p>
+              <p>Include your registered email address in the email.</p>
+              <p>Our team will process your request within 24-48 hours.</p>
+              <p>You will retain access to your subscription until the end of your current billing cycle.</p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Keep Subscription</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => cancelSubscriptionMutation.mutate()}
-              disabled={cancelSubscriptionMutation.isPending}
-            >
-              {cancelSubscriptionMutation.isPending ? "Cancelling..." : "Yes, Cancel Subscription"}
+            <AlertDialogCancel onClick={() => setShowCancelDialog(false)}>Close</AlertDialogCancel>
+            <AlertDialogAction onClick={handleCancelConfirm}>
+              Open Email Client
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

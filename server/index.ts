@@ -14,7 +14,7 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Add session middleware
+// Add session middleware with secure configuration
 app.use(
   session({
     store: storage.sessionStore,
@@ -25,22 +25,25 @@ app.use(
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      sameSite: 'lax'
     },
   })
 );
 
-// Add request logging middleware
+// Add request logging middleware with authentication status
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
 
-  // Log auth status
-  console.log(`Auth status for ${path}:`, {
+  // Enhanced auth logging
+  const authStatus = {
     isAuthenticated: req.session?.userId !== undefined,
     sessionId: req.session?.id,
     userId: req.session?.userId,
-  });
+    path: path
+  };
+  console.log('Auth status:', authStatus);
 
   const originalResJson = res.json;
   res.json = function (bodyJson, ...args) {
@@ -70,13 +73,23 @@ app.use((req, res, next) => {
 (async () => {
   const server = registerRoutes(app);
 
+  // Enhanced error handling
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     console.error('Error:', err);
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
-    res.status(status).json({ message });
-    throw err;
+    // Send more detailed error response
+    res.status(status).json({ 
+      message,
+      status,
+      path: _req.path,
+      timestamp: new Date().toISOString()
+    });
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('Stack trace:', err.stack);
+    }
   });
 
   if (app.get("env") === "development") {
@@ -85,8 +98,8 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  const PORT = 5000;
+  const PORT = process.env.PORT || 5000;
   server.listen(PORT, "0.0.0.0", () => {
-    log(`serving on port ${PORT}`);
+    log(`Server running on port ${PORT}`);
   });
 })();

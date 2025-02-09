@@ -26,6 +26,7 @@ export class StripeService {
         {
           name: "STARTER",
           stripe_price_id: "price_1QqVclCDMMERRP2ncvcdIx9k",
+          product_id: "prod_RjzbxNOXmV4nOx",
           features: ['500 SMS messages', 'Basic support', 'Essential features'],
           price_per_month: '49.99',
           message_credits: 500,
@@ -34,6 +35,7 @@ export class StripeService {
         {
           name: "GROWTH",
           stripe_price_id: "price_1QqVd9CDMMERRP2nDrjsiOrj",
+          product_id: "prod_RjzcgpJzvWrb6g",
           features: ['1,500 SMS messages', 'Priority support', 'Advanced features'],
           price_per_month: '99.99',
           message_credits: 1500,
@@ -42,6 +44,7 @@ export class StripeService {
         {
           name: "PRO",
           stripe_price_id: "price_1QqVdNCDMMERRP2nmIrc2RxU",
+          product_id: "prod_RjzcKSiNmk88GR",
           features: ['5,000 SMS messages', 'Premium support', 'All features'],
           price_per_month: '199.99',
           message_credits: 5000,
@@ -224,7 +227,23 @@ export class StripeService {
 
   static async cancelSubscription(userId: number) {
     try {
+      // Get user and subscription details
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      if (!user.stripeCustomerId) {
+        throw new Error('No active subscription found');
+      }
+
+      if (!user.stripeSubscriptionId) {
+        throw new Error('No active subscription ID found');
+      }
+
       if (isDevelopment) {
+        console.log('Development mode: Canceling mock subscription');
         await db
           .update(users)
           .set({
@@ -232,18 +251,16 @@ export class StripeService {
             subscriptionPlan: null,
           })
           .where(eq(users.id, userId));
-        return { status: 'canceled', canceled_at: Date.now() };
+        return { 
+          status: 'canceled', 
+          canceled_at: Date.now() 
+        };
       }
 
       this.checkStripe();
+      if (!stripe) throw new Error('Stripe is not initialized');
 
-      const [user] = await db.select().from(users).where(eq(users.id, userId));
-
-      if (!user?.stripeSubscriptionId) {
-        throw new Error('No active subscription found');
-      }
-
-      const subscription = await stripe!.subscriptions.cancel(user.stripeSubscriptionId);
+      const subscription = await stripe.subscriptions.cancel(user.stripeSubscriptionId);
 
       await db
         .update(users)

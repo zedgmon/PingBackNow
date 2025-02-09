@@ -197,12 +197,11 @@ export default function Billing() {
       if (!response.ok) {
         const data = await response.json();
         if (response.status === 401) {
-          // Handle authentication error
           throw new Error("Please log in to cancel your subscription.");
         } else if (response.status === 404) {
           throw new Error("User account not found. Please try logging in again.");
         } else if (response.status === 400) {
-          throw new Error("No active subscription found for this account.");
+          throw new Error(data.error || "No active subscription found for this account.");
         }
         throw new Error(data.error || "Failed to cancel subscription");
       }
@@ -216,7 +215,7 @@ export default function Billing() {
         description: data.message || "Your subscription has been cancelled successfully. You'll have access until the end of your current billing period.",
       });
 
-      // Optionally update UI to show cancellation status
+      // Update UI to show cancellation status
       if (user) {
         user.subscriptionStatus = 'canceled';
       }

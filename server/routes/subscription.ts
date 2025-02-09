@@ -129,13 +129,25 @@ router.post('/cancel', async (req, res) => {
 
     if (!user) {
       return res.status(404).json({ 
-        error: 'User account not found.' 
+        error: 'User account not found. Please try logging in again.' 
       });
     }
 
     if (!user.stripeCustomerId) {
       return res.status(400).json({ 
-        error: 'No active subscription found for this account.' 
+        error: 'No active subscription found for this account. If you believe this is an error, please contact support.' 
+      });
+    }
+
+    if (!user.stripeSubscriptionId) {
+      return res.status(400).json({ 
+        error: 'Unable to find your subscription details. Please contact support for assistance.' 
+      });
+    }
+
+    if (user.subscriptionStatus === 'canceled') {
+      return res.status(400).json({ 
+        error: 'Your subscription is already canceled.' 
       });
     }
 

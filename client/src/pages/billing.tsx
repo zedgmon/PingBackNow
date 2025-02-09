@@ -75,7 +75,7 @@ const plans = [
       "Email support",
     ],
     priceId: "starter",
-    stripePriceId: "price_mock_starter",
+    stripePriceId: "price_1QqVclCDMMERRP2ncvcdIx9k",
   },
   {
     name: "Growth",
@@ -89,7 +89,7 @@ const plans = [
       "Custom auto-response messages",
     ],
     priceId: "growth",
-    stripePriceId: "price_mock_growth",
+    stripePriceId: "price_1QqVd9CDMMERRP2nDrjsiOrj",
   },
   {
     name: "Pro",
@@ -104,7 +104,7 @@ const plans = [
       "Dedicated account manager",
     ],
     priceId: "pro",
-    stripePriceId: "price_mock_pro",
+    stripePriceId: "price_1QqVdNCDMMERRP2nmIrc2RxU",
   },
 ];
 

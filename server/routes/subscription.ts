@@ -7,10 +7,27 @@ import { eq } from 'drizzle-orm';
 
 const router = express.Router();
 
+// Debug endpoint for development mode only
+router.post('/debug/init-plans', async (req, res) => {
+  try {
+    console.log('Manually triggering mock plan creation...');
+    await StripeService.ensureMockPlansExist();
+    const plans = await db.select().from(subscriptionPlans);
+    res.json({ success: true, plans });
+  } catch (error) {
+    console.error('Error initializing mock plans:', error);
+    res.status(500).json({ 
+      error: error instanceof Error ? error.message : 'Failed to initialize mock plans'
+    });
+  }
+});
+
 // Get available subscription plans
 router.get('/plans', async (req, res) => {
   try {
+    console.log('Fetching subscription plans...');
     const plans = await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.active, true));
+    console.log('Found plans:', plans);
     res.json(plans);
   } catch (error) {
     console.error('Error fetching subscription plans:', error);

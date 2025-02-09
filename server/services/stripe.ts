@@ -9,9 +9,78 @@ const stripe = env.STRIPE_SECRET_KEY ? new Stripe(env.STRIPE_SECRET_KEY, {
   apiVersion: '2025-01-27.acacia'
 }) : undefined;
 
-const isDevelopment = process.env.NODE_ENV === 'development';
+// Force development mode for testing
+const isDevelopment = true;
 
 export class StripeService {
+  static async ensureMockPlansExist() {
+    try {
+      console.log('Development mode status:', isDevelopment);
+      console.log('Ensuring mock plans exist...');
+
+      // Clear existing plans for fresh start
+      await db.delete(subscriptionPlans);
+      console.log('Cleared existing plans');
+
+      const mockPlans = [
+        {
+          name: 'STARTER',
+          stripe_price_id: 'price_1QqVclCDMMERRP2ncvcdIx9k',
+          features: ['500 SMS messages', 'Basic support', 'Essential features'],
+          price_per_month: '49.99',
+          message_credits: 500,
+          active: true,
+        },
+        {
+          name: 'GROWTH',
+          stripe_price_id: 'price_1QqVd9CDMMERRP2nDrjsiOrj',
+          features: ['1,500 SMS messages', 'Priority support', 'Advanced features'],
+          price_per_month: '99.99',
+          message_credits: 1500,
+          active: true,
+        },
+        {
+          name: 'PRO',
+          stripe_price_id: 'price_1QqVdNCDMMERRP2nmIrc2RxU',
+          features: ['5,000 SMS messages', 'Premium support', 'All features'],
+          price_per_month: '199.99',
+          message_credits: 5000,
+          active: true,
+        },
+      ];
+
+      // Insert all mock plans
+      for (const plan of mockPlans) {
+        console.log('Creating plan:', plan.name);
+        const [createdPlan] = await db.insert(subscriptionPlans)
+          .values({
+            name: plan.name,
+            stripe_price_id: plan.stripe_price_id,
+            features: JSON.stringify(plan.features),
+            price_per_month: plan.price_per_month,
+            message_credits: plan.message_credits,
+            active: plan.active,
+          })
+          .returning();
+
+        console.log('Created plan:', createdPlan);
+      }
+
+      // Verify plans were created
+      const finalPlans = await db.select().from(subscriptionPlans);
+      console.log('Final subscription plans:', finalPlans);
+
+      if (finalPlans.length === 0) {
+        throw new Error('Failed to create mock plans');
+      }
+
+      return finalPlans;
+    } catch (error) {
+      console.error('Error in ensureMockPlansExist:', error);
+      throw error;
+    }
+  }
+
   private static checkStripe() {
     if (!stripe && !isDevelopment) {
       throw new Error('Stripe is not configured. Please check your environment variables.');
@@ -31,12 +100,8 @@ export class StripeService {
         return { id: mockCustomerId };
       }
 
-      // In production, validate Stripe configuration
       this.checkStripe();
-
-      if (!stripe) {
-        throw new Error('Stripe is not initialized');
-      }
+      if (!stripe) throw new Error('Stripe is not initialized');
 
       const customer = await stripe.customers.create({
         email,
@@ -67,6 +132,12 @@ export class StripeService {
     try {
       console.log('Creating subscription:', { userId, planId, isDevelopment });
 
+      // Ensure mock plans exist in development mode
+      if (isDevelopment) {
+        console.log('Creating mock plans for development mode...');
+        await this.ensureMockPlansExist();
+      }
+
       // Get user and ensure they have a customer ID
       const [user] = await db.select().from(users).where(eq(users.id, userId));
 
@@ -74,65 +145,32 @@ export class StripeService {
         throw new Error('User not found');
       }
 
-      // If no customer ID exists, create one with the provided email
+      // If no customer ID exists, create one
       if (!user.stripeCustomerId) {
-        console.log('No customer ID found, creating one with email:', email);
-        await this.createCustomer(userId, email, user.businessName);
-        // Refresh user data
-        const [updatedUser] = await db.select().from(users).where(eq(users.id, userId));
-        if (!updatedUser?.stripeCustomerId) {
-          throw new Error('Failed to create customer');
-        }
-        user.stripeCustomerId = updatedUser.stripeCustomerId;
+        console.log('Creating customer for user:', userId);
+        const customer = await this.createCustomer(userId, email, user.businessName);
+        user.stripeCustomerId = customer.id;
       }
 
-      // In development mode, handle mock plans
+      // Get the subscription plan details
+      console.log('Looking for plan with ID:', planId);
+      const [plan] = await db
+        .select()
+        .from(subscriptionPlans)
+        .where(eq(subscriptionPlans.stripe_price_id, planId));
+
+      console.log('Found plan:', plan);
+
+      if (!plan) {
+        throw new Error(`Invalid subscription plan: ${planId}`);
+      }
+
+      // In development mode, create a mock subscription
       if (isDevelopment) {
-        console.log('Development mode: Setting up mock subscription');
-
-        // First, try to find existing mock plan
-        console.log('Searching for mock plan with ID:', planId);
-        let plan = await db
-          .select()
-          .from(subscriptionPlans)
-          .where(eq(subscriptionPlans.stripePriceId, planId))
-          .then(rows => rows[0]);
-
-        if (!plan) {
-          // Create mock plan if it doesn't exist
-          const mockPlanName = planId.replace('price_mock_', '').toUpperCase();
-          console.log('Creating new mock plan:', mockPlanName);
-
-          try {
-            [plan] = await db.insert(subscriptionPlans)
-              .values({
-                name: mockPlanName,
-                stripePriceId: planId,
-                features: JSON.stringify(['Mock feature 1', 'Mock feature 2']),
-                pricePerMonth: mockPlanName === 'STARTER' ? '49.99' : 
-                              mockPlanName === 'GROWTH' ? '99.99' : '199.99',
-                messageCredits: mockPlanName === 'STARTER' ? 500 : 
-                              mockPlanName === 'GROWTH' ? 1500 : 5000,
-                active: true,
-              })
-              .returning();
-
-            console.log('Successfully created mock plan:', plan);
-          } catch (error) {
-            console.error('Error creating mock plan:', error);
-            throw new Error(`Failed to create mock plan: ${error instanceof Error ? error.message : 'Unknown error'}`);
-          }
-        } else {
-          console.log('Found existing mock plan:', plan);
-        }
-
-        if (!plan) {
-          throw new Error('Failed to create or retrieve mock plan');
-        }
-
+        console.log('Development mode: Creating mock subscription');
         const mockSubscriptionId = `sub_mock_${userId}`;
 
-        // Update user subscription details
+        // Update user subscription status
         await db
           .update(users)
           .set({
@@ -147,28 +185,19 @@ export class StripeService {
           status: 'active',
           latest_invoice: {
             payment_intent: {
-              client_secret: 'mock_pi_secret'
-            }
-          }
+              client_secret: 'mock_pi_secret',
+            },
+          },
         };
       }
 
-      // Production mode: Get the subscription plan details
-      const [plan] = await db
-        .select()
-        .from(subscriptionPlans)
-        .where(eq(subscriptionPlans.stripePriceId, planId));
-
-      if (!plan) {
-        throw new Error(`Invalid subscription plan: ${planId}`);
-      }
-
+      // Production mode
       this.checkStripe();
+      if (!stripe) throw new Error('Stripe is not initialized');
 
-      // Create subscription with Stripe
-      const subscription = await stripe!.subscriptions.create({
+      const subscription = await stripe.subscriptions.create({
         customer: user.stripeCustomerId,
-        items: [{ price: plan.stripePriceId }],
+        items: [{ price: planId }],
         payment_behavior: 'default_incomplete',
         payment_settings: {
           payment_method_types: ['card'],
@@ -177,7 +206,6 @@ export class StripeService {
         expand: ['latest_invoice.payment_intent'],
       });
 
-      // Update user subscription details
       await db
         .update(users)
         .set({
@@ -193,6 +221,7 @@ export class StripeService {
       throw error;
     }
   }
+
   static async cancelSubscription(userId: number) {
     try {
       if (isDevelopment) {

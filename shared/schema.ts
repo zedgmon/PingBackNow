@@ -28,10 +28,10 @@ export const users = pgTable("users", {
 export const subscriptionPlans = pgTable("subscription_plans", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  stripePriceId: text("stripe_price_id").notNull(),
+  stripe_price_id: text("stripe_price_id").notNull(),
   features: jsonb("features").notNull(),
-  pricePerMonth: decimal("price_per_month").notNull(),
-  messageCredits: integer("message_credits").notNull(),
+  price_per_month: decimal("price_per_month").notNull(),
+  message_credits: integer("message_credits").notNull(),
   active: boolean("active").notNull().default(true),
 });
 

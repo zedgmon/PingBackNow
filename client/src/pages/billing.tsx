@@ -8,7 +8,6 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from "@/components/ui/card";
 import {
   AlertDialog,
@@ -25,8 +24,8 @@ import { Check, CreditCard } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { CreditUsageChart } from "@/components/credit-usage-chart";
+import { useState, useEffect } from "react";
 import { loadStripe } from "@stripe/stripe-js";
-import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -41,96 +40,44 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 
-// Initialize Stripe with better error handling and logging
-const isDevelopment = import.meta.env.MODE === 'development';
-const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
-
-// Add detailed logging for Stripe configuration
-console.log('Stripe Config:', {
-  isDevelopment,
-  hasPublishableKey: !!stripePublishableKey,
-  mode: import.meta.env.MODE,
-  key: stripePublishableKey ? `${stripePublishableKey.substring(0, 8)}...` : 'not set',
-});
-
-let stripePromise: Promise<any> | null = null;
-const getStripe = async () => {
-  if (!stripePromise) {
-    if (!stripePublishableKey) {
-      console.error('Stripe publishable key is missing');
-      return null;
-    }
-
-    try {
-      stripePromise = loadStripe(stripePublishableKey);
-      const stripe = await stripePromise;
-      console.log('Stripe initialized:', !!stripe);
-      return stripe;
-    } catch (error) {
-      console.error('Stripe initialization error:', error);
-      return null;
-    }
-  }
-  return stripePromise;
-};
-
-const plans = [
-  {
-    name: "Starter",
-    price: "$49",
-    description: "Perfect for small businesses",
-    features: [
-      "500 SMS messages included",
-      "Automatic missed call responses",
-      "Basic lead tracking",
-      "Email support",
-    ],
-    priceId: "starter",
-    stripePriceId: "price_1QqVclCDMMERRP2ncvcdIx9k",
-  },
-  {
-    name: "Growth",
-    price: "$99",
-    description: "For growing businesses",
-    features: [
-      "1,500 SMS messages included",
-      "Priority missed call handling",
-      "Advanced lead management",
-      "Priority support",
-      "Custom auto-response messages",
-    ],
-    priceId: "growth",
-    stripePriceId: "price_1QqVd9CDMMERRP2nDrjsiOrj",
-  },
-  {
-    name: "Pro",
-    price: "$199",
-    description: "For high-volume businesses",
-    features: [
-      "5,000 SMS messages included",
-      "Priority missed call handling",
-      "Advanced lead management",
-      "Priority support",
-      "Custom auto-response messages",
-      "Dedicated account manager",
-    ],
-    priceId: "pro",
-    stripePriceId: "price_1QqVdNCDMMERRP2nmIrc2RxU",
-  },
-];
-
-const emailSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-});
-
-type EmailFormData = z.infer<typeof emailSchema>;
-
 export default function Billing() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+
+  // Initialize Stripe with better error handling and logging
+  const [stripeInitialized, setStripeInitialized] = useState(false);
+  const isDevelopment = import.meta.env.MODE === 'development';
+  const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+
+  useEffect(() => {
+    console.log('Environment Configuration:', {
+      isDevelopment,
+      hasStripeKey: !!stripePublishableKey,
+      mode: import.meta.env.MODE,
+      stripeKey: stripePublishableKey ? `${stripePublishableKey.substring(0, 8)}...` : 'not set',
+      isAuthenticated: !!user,
+    });
+
+    const initStripe = async () => {
+      if (!stripePublishableKey) {
+        console.error('Stripe publishable key is missing');
+        return;
+      }
+
+      try {
+        const stripe = await loadStripe(stripePublishableKey);
+        setStripeInitialized(!!stripe);
+        console.log('Stripe initialized:', !!stripe);
+      } catch (error) {
+        console.error('Stripe initialization error:', error);
+      }
+    };
+
+    initStripe();
+  }, [stripePublishableKey, user]);
 
   const form = useForm<EmailFormData>({
     resolver: zodResolver(emailSchema),
@@ -141,18 +88,22 @@ export default function Billing() {
       try {
         console.log('Starting subscription process...', { isDevelopment, hasPublishableKey: !!stripePublishableKey });
 
-        const stripe = await getStripe();
-        if (!stripe) {
-          if (isDevelopment) {
-            console.log('Development mode: mocking subscription');
-            const response = await apiRequest("POST", "/api/subscribe/create", {
-              planId,
-              email,
-              paymentMethodId: 'mock_pm_123'
-            });
-            return response.json();
-          }
-          throw new Error('Stripe failed to initialize. Please check if the publishable key is set correctly.');
+        if (!user) {
+          throw new Error('Please log in to subscribe to a plan.');
+        }
+
+        if (isDevelopment) {
+          console.log('Development mode: mocking subscription');
+          const response = await apiRequest("POST", "/api/subscribe/create", {
+            planId,
+            email,
+            paymentMethodId: 'mock_pm_123'
+          });
+          return response.json();
+        }
+
+        if (!stripeInitialized) {
+          throw new Error('Payment system is not ready. Please try again in a few moments.');
         }
 
         const response = await apiRequest("POST", "/api/subscribe/create", {
@@ -192,6 +143,14 @@ export default function Billing() {
   });
 
   const handleSubscribe = (planId: string) => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to subscribe to a plan.",
+        variant: "destructive",
+      });
+      return;
+    }
     setSelectedPlan(planId);
     setShowEmailDialog(true);
   };
@@ -270,20 +229,8 @@ export default function Billing() {
                 </Badge>
               </div>
             </CardContent>
-            <CardFooter>
-              <Button
-                variant="outline"
-                className="w-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                onClick={handleCancelSubscription}
-              >
-                Cancel Subscription
-              </Button>
-            </CardFooter>
           </Card>
         )}
-
-        {/* Card element container */}
-        <div id="card-element" className="p-4 border rounded-md bg-background"></div>
 
         {/* Subscription plans */}
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
@@ -307,22 +254,20 @@ export default function Billing() {
                   ))}
                 </ul>
               </CardContent>
-              <CardFooter>
-                <Button
-                  className="w-full"
-                  onClick={() => handleSubscribe(plan.stripePriceId)}
-                  disabled={
-                    subscribeMutation.isPending ||
-                    user?.subscriptionPlan === plan.priceId
-                  }
-                >
-                  {subscribeMutation.isPending
-                    ? "Processing..."
-                    : user?.subscriptionPlan === plan.priceId
-                      ? "Current Plan"
-                      : "Subscribe"}
-                </Button>
-              </CardFooter>
+              <Button
+                className="w-full"
+                onClick={() => handleSubscribe(plan.stripePriceId)}
+                disabled={
+                  subscribeMutation.isPending ||
+                  user?.subscriptionPlan === plan.priceId
+                }
+              >
+                {subscribeMutation.isPending
+                  ? "Processing..."
+                  : user?.subscriptionPlan === plan.priceId
+                    ? "Current Plan"
+                    : "Subscribe"}
+              </Button>
             </Card>
           ))}
         </div>
@@ -371,6 +316,30 @@ export default function Billing() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Add cancellation section at the bottom */}
+        {user?.subscriptionPlan && (
+          <Card className="border-destructive/20">
+            <CardHeader>
+              <CardTitle className="text-destructive">Cancel Subscription</CardTitle>
+              <CardDescription>
+                Need to cancel your subscription? We're here to help.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                If you decide to cancel, you'll continue to have access to all features until the end of your current billing period.
+              </p>
+              <Button
+                variant="outline"
+                className="w-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                onClick={handleCancelSubscription}
+              >
+                Cancel Subscription
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Email Collection Dialog */}
@@ -435,3 +404,55 @@ export default function Billing() {
     </DashboardShell>
   );
 }
+
+// Plan definitions and email schema
+const emailSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+});
+
+type EmailFormData = z.infer<typeof emailSchema>;
+
+const plans = [
+  {
+    name: "Starter",
+    price: "$49",
+    description: "Perfect for small businesses",
+    features: [
+      "500 SMS messages included",
+      "Automatic missed call responses",
+      "Basic lead tracking",
+      "Email support",
+    ],
+    priceId: "starter",
+    stripePriceId: "price_1QqVclCDMMERRP2ncvcdIx9k",
+  },
+  {
+    name: "Growth",
+    price: "$99",
+    description: "For growing businesses",
+    features: [
+      "1,500 SMS messages included",
+      "Priority missed call handling",
+      "Advanced lead management",
+      "Priority support",
+      "Custom auto-response messages",
+    ],
+    priceId: "growth",
+    stripePriceId: "price_1QqVd9CDMMERRP2nDrjsiOrj",
+  },
+  {
+    name: "Pro",
+    price: "$199",
+    description: "For high-volume businesses",
+    features: [
+      "5,000 SMS messages included",
+      "Priority missed call handling",
+      "Advanced lead management",
+      "Priority support",
+      "Custom auto-response messages",
+      "Dedicated account manager",
+    ],
+    priceId: "pro",
+    stripePriceId: "price_1QqVdNCDMMERRP2nmIrc2RxU",
+  },
+];

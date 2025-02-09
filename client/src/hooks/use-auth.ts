@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext } from "react";
+import { createContext, useContext } from "react";
 import {
   useQuery,
   useMutation,
@@ -14,14 +14,14 @@ type AuthContextType = {
   error: Error | null;
   loginMutation: UseMutationResult<SelectUser, Error, LoginData>;
   logoutMutation: UseMutationResult<void, Error, void>;
-  registerMutation: UseMutationResult<SelectUser, Error, InsertUser>;
+  registerMutation: UseMutationResult<void, Error, InsertUser>;
 };
 
 type LoginData = Pick<InsertUser, "email" | "password">;
 
-export const AuthContext = createContext<AuthContextType | null>(null);
+const AuthContext = createContext<AuthContextType | null>(null);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }) {
   const { toast } = useToast();
   const {
     data: user,
@@ -85,20 +85,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user: user ?? null,
-        isLoading,
-        error,
-        loginMutation,
-        logoutMutation,
-        registerMutation,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
+  const contextValue: AuthContextType = {
+    user: user ?? null,
+    isLoading,
+    error,
+    loginMutation,
+    logoutMutation,
+    registerMutation,
+  };
+
+  return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

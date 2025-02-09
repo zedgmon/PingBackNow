@@ -116,13 +116,43 @@ router.post('/cancel', async (req, res) => {
     });
 
     if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized - No user ID in session' });
+      return res.status(401).json({ 
+        error: 'Authentication required. Please log in to cancel your subscription.' 
+      });
+    }
+
+    // Get user details to verify stripe customer exists
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId));
+
+    if (!user) {
+      return res.status(404).json({ 
+        error: 'User account not found.' 
+      });
+    }
+
+    if (!user.stripeCustomerId) {
+      return res.status(400).json({ 
+        error: 'No active subscription found for this account.' 
+      });
     }
 
     const subscription = await StripeService.cancelSubscription(userId);
+
+    // Update user's subscription status in database
+    await db
+      .update(users)
+      .set({
+        subscriptionStatus: 'canceled',
+      })
+      .where(eq(users.id, userId));
+
     res.json({
       status: subscription.status,
-      canceledAt: subscription.canceled_at
+      canceledAt: subscription.canceled_at,
+      message: 'Your subscription will remain active until the end of the current billing period.'
     });
   } catch (error) {
     console.error('Error canceling subscription:', error);

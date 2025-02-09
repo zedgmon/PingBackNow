@@ -194,18 +194,32 @@ export default function Billing() {
   const cancelSubscriptionMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", "/api/subscribe/cancel");
-      const data = await response.json();
-      if (data.error) {
-        throw new Error(data.error);
+      if (!response.ok) {
+        const data = await response.json();
+        if (response.status === 401) {
+          // Handle authentication error
+          throw new Error("Please log in to cancel your subscription.");
+        } else if (response.status === 404) {
+          throw new Error("User account not found. Please try logging in again.");
+        } else if (response.status === 400) {
+          throw new Error("No active subscription found for this account.");
+        }
+        throw new Error(data.error || "Failed to cancel subscription");
       }
+      const data = await response.json();
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       setShowCancelDialog(false);
       toast({
         title: "Subscription cancelled",
-        description: "Your subscription has been cancelled successfully. You'll have access until the end of your current billing period.",
+        description: data.message || "Your subscription has been cancelled successfully. You'll have access until the end of your current billing period.",
       });
+
+      // Optionally update UI to show cancellation status
+      if (user) {
+        user.subscriptionStatus = 'canceled';
+      }
     },
     onError: (error: Error) => {
       console.error('Cancellation error:', error);
@@ -214,6 +228,11 @@ export default function Billing() {
         description: error.message,
         variant: "destructive",
       });
+
+      // Close dialog only for auth errors to allow retry for other errors
+      if (error.message.includes("Please log in")) {
+        setShowCancelDialog(false);
+      }
     },
   });
 
@@ -273,9 +292,13 @@ export default function Billing() {
                 variant="outline"
                 className="w-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
                 onClick={handleCancelSubscription}
-                disabled={cancelSubscriptionMutation.isPending}
+                disabled={!user || cancelSubscriptionMutation.isPending || user.subscriptionStatus === 'canceled'}
               >
-                {cancelSubscriptionMutation.isPending ? "Cancelling..." : "Cancel Subscription"}
+                {cancelSubscriptionMutation.isPending
+                  ? "Cancelling..."
+                  : user?.subscriptionStatus === 'canceled'
+                    ? "Subscription Cancelled"
+                    : "Cancel Subscription"}
               </Button>
             </CardFooter>
           </Card>
@@ -318,8 +341,8 @@ export default function Billing() {
                   {subscribeMutation.isPending
                     ? "Processing..."
                     : user?.subscriptionPlan === plan.priceId
-                    ? "Current Plan"
-                    : "Subscribe"}
+                      ? "Current Plan"
+                      : "Subscribe"}
                 </Button>
               </CardFooter>
             </Card>

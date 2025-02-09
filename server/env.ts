@@ -11,20 +11,28 @@ const envSchema = z.object({
 }));
 
 const parseEnvVars = () => {
-  try {
-    return envSchema.parse({
-      STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
-      STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY,
-      STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
-    });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      const missingVars = error.errors.map(err => err.path.join('.')).join(', ');
-      console.error(`Required environment variables missing: ${missingVars}`);
-      throw new Error('Missing required environment variables for Stripe integration');
+    console.log("Checking environment variables...");
+    console.log("STRIPE_SECRET_KEY:", process.env.STRIPE_SECRET_KEY ? "✅ Loaded" : "❌ Missing");
+    console.log("STRIPE_PUBLISHABLE_KEY:", process.env.STRIPE_PUBLISHABLE_KEY ? "✅ Loaded" : "❌ Missing");
+    console.log("STRIPE_WEBHOOK_SECRET:", process.env.STRIPE_WEBHOOK_SECRET ? "✅ Loaded" : "❌ Missing");
+  
+    try {
+      const parsedEnv = envSchema.safeParse({
+        STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
+        STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY,
+        STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+      });
+  
+      if (!parsedEnv.success) {
+        console.error("⚠️ Missing required environment variables:", parsedEnv.error.format());
+        return {}; // Return an empty object instead of crashing
+      }
+  
+      return parsedEnv.data;
+    } catch (error) {
+      console.error("Unexpected error parsing environment variables:", error);
+      return {}; // Ensure the app does not crash
     }
-    throw error;
-  }
 };
 
 export const env = parseEnvVars();

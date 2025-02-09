@@ -31,11 +31,6 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  // Keep this for backward compatibility with IStorage interface
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return this.getUserByEmail(username);
-  }
-
   async getUserByVerificationToken(token: string): Promise<User | undefined> {
     const [user] = await db
       .select()

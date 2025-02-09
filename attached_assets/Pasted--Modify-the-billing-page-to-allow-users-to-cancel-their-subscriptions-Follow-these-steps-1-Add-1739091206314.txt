@@ -1,0 +1,29 @@
+"Modify the billing page to allow users to cancel their subscriptions. Follow these steps:"
+
+1️⃣ Add a "Cancel Subscription" Button to the Billing Page
+Place the button below the plan selection and SMS usage section.
+Style it as a red-bordered button with hover effects for clear visibility.
+Clicking the button should trigger a confirmation popup to prevent accidental cancellations.
+2️⃣ Backend: Handle Subscription Cancellation Request
+Create a new API route (/cancel-subscription) to handle user cancellation requests.
+Retrieve the current user's Stripe customer_id from the system.
+Find the user's active subscription in Stripe.
+Cancel the subscription using Stripe's API, setting cancel_at_period_end=True, so the user retains access until the billing period ends.
+Return a confirmation response to the frontend after cancellation.
+3️⃣ Update UI After Cancellation
+When the cancellation is successful, display a notification confirming the cancellation.
+Update the UI to indicate the subscription is pending cancellation and prevent further billing actions.
+Disable the cancel button once the cancellation request is confirmed to prevent multiple submissions.
+4️⃣ Ensure Webhook Listens for Final Cancellation
+Set up a webhook listener to detect customer.subscription.deleted events from Stripe.
+When Stripe finalizes the cancellation, update the user’s account status in the system.
+Ensure the backend properly marks the account as inactive or unsubscribed when the subscription ends.
+5️⃣ Error Handling & Edge Cases
+If no active subscription is found, display an error message instead of allowing cancellation.
+If the Stripe API fails, return a fallback message advising the user to contact support.
+Ensure users cannot downgrade while a cancellation is pending, to prevent billing conflicts.
+Expected Result
+A Cancel Subscription button appears on the billing page.
+Clicking the button prompts the user to confirm cancellation.
+After confirmation, the system sends the request to Stripe and updates the UI.
+A webhook listens for final confirmation and marks the account as inactive.

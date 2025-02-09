@@ -24,24 +24,24 @@ export class StripeService {
 
       const mockPlans = [
         {
-          name: 'STARTER',
-          stripe_price_id: 'price_1QqVclCDMMERRP2ncvcdIx9k',
+          name: "STARTER",
+          stripe_price_id: "price_1QqVclCDMMERRP2ncvcdIx9k",
           features: ['500 SMS messages', 'Basic support', 'Essential features'],
           price_per_month: '49.99',
           message_credits: 500,
           active: true,
         },
         {
-          name: 'GROWTH',
-          stripe_price_id: 'price_1QqVd9CDMMERRP2nDrjsiOrj',
+          name: "GROWTH",
+          stripe_price_id: "price_1QqVd9CDMMERRP2nDrjsiOrj",
           features: ['1,500 SMS messages', 'Priority support', 'Advanced features'],
           price_per_month: '99.99',
           message_credits: 1500,
           active: true,
         },
         {
-          name: 'PRO',
-          stripe_price_id: 'price_1QqVdNCDMMERRP2nmIrc2RxU',
+          name: "PRO",
+          stripe_price_id: "price_1QqVdNCDMMERRP2nmIrc2RxU",
           features: ['5,000 SMS messages', 'Premium support', 'All features'],
           price_per_month: '199.99',
           message_credits: 5000,

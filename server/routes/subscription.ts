@@ -7,7 +7,7 @@ import { eq } from 'drizzle-orm';
 
 const router = express.Router();
 
-// Debug endpoint for development mode only
+// Development mode helper to initialize mock plans
 router.post('/debug/init-plans', async (req, res) => {
   try {
     console.log('Manually triggering mock plan creation...');
@@ -39,10 +39,18 @@ router.get('/plans', async (req, res) => {
 router.post('/create', async (req, res) => {
   try {
     const { planId, paymentMethodId, email } = req.body;
-    const userId = req.user?.id;
+    const userId = req.session?.userId;
+
+    console.log('Create subscription request:', {
+      userId,
+      planId,
+      email,
+      hasSession: !!req.session,
+      sessionId: req.session?.id
+    });
 
     if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      return res.status(401).json({ error: 'Unauthorized - No user ID in session' });
     }
 
     if (!email) {
@@ -99,10 +107,16 @@ router.post('/create', async (req, res) => {
 // Cancel subscription
 router.post('/cancel', async (req, res) => {
   try {
-    const userId = req.user?.id;
+    const userId = req.session?.userId;
+
+    console.log('Cancel subscription request:', {
+      userId,
+      hasSession: !!req.session,
+      sessionId: req.session?.id
+    });
 
     if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      return res.status(401).json({ error: 'Unauthorized - No user ID in session' });
     }
 
     const subscription = await StripeService.cancelSubscription(userId);

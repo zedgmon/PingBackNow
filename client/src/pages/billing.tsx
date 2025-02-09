@@ -10,6 +10,16 @@ import {
   CardTitle,
   CardFooter,
 } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Check, CreditCard } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
@@ -31,15 +41,16 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 
-// Initialize Stripe with better error handling
+// Initialize Stripe with better error handling and logging
 const isDevelopment = import.meta.env.MODE === 'development';
 const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
 
+// Add detailed logging for Stripe configuration
 console.log('Stripe Config:', {
   isDevelopment,
   hasPublishableKey: !!stripePublishableKey,
   mode: import.meta.env.MODE,
-  key: stripePublishableKey ? stripePublishableKey.substring(0, 8) + '...' : 'not set',
+  key: stripePublishableKey ? `${stripePublishableKey.substring(0, 8)}...` : 'not set',
 });
 
 let stripePromise: Promise<any> | null = null;
@@ -119,6 +130,7 @@ export default function Billing() {
   const { toast } = useToast();
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
 
   const form = useForm<EmailFormData>({
     resolver: zodResolver(emailSchema),
@@ -179,6 +191,32 @@ export default function Billing() {
     },
   });
 
+  const cancelSubscriptionMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/subscribe/cancel");
+      const data = await response.json();
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      return data;
+    },
+    onSuccess: () => {
+      setShowCancelDialog(false);
+      toast({
+        title: "Subscription cancelled",
+        description: "Your subscription has been cancelled successfully. You'll have access until the end of your current billing period.",
+      });
+    },
+    onError: (error: Error) => {
+      console.error('Cancellation error:', error);
+      toast({
+        title: "Cancellation error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleSubscribe = (planId: string) => {
     setSelectedPlan(planId);
     setShowEmailDialog(true);
@@ -188,6 +226,10 @@ export default function Billing() {
     if (selectedPlan) {
       subscribeMutation.mutate({ planId: selectedPlan, email: data.email });
     }
+  };
+
+  const handleCancelSubscription = () => {
+    setShowCancelDialog(true);
   };
 
   return (
@@ -226,6 +268,16 @@ export default function Billing() {
                 </Badge>
               </div>
             </CardContent>
+            <CardFooter>
+              <Button
+                variant="outline"
+                className="w-full border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                onClick={handleCancelSubscription}
+                disabled={cancelSubscriptionMutation.isPending}
+              >
+                {cancelSubscriptionMutation.isPending ? "Cancelling..." : "Cancel Subscription"}
+              </Button>
+            </CardFooter>
           </Card>
         )}
 
@@ -351,6 +403,28 @@ export default function Billing() {
           </Form>
         </DialogContent>
       </Dialog>
+
+      {/* Cancel Subscription Confirmation Dialog */}
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Subscription</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel your subscription? You'll continue to have access until the end of your current billing period.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Subscription</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => cancelSubscriptionMutation.mutate()}
+              disabled={cancelSubscriptionMutation.isPending}
+            >
+              {cancelSubscriptionMutation.isPending ? "Cancelling..." : "Yes, Cancel Subscription"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardShell>
   );
 }

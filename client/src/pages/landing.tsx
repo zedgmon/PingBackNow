@@ -21,17 +21,7 @@ import {
   ArrowUpRight,
   MessageSquare,
   ArrowRight,
-  PlayCircle,
-  ChevronRight,
-  Star,
 } from "lucide-react";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -77,15 +67,6 @@ export default function Landing() {
                   <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Button>
               </Link>
-              <Button size="lg" variant="outline" className="w-full sm:w-auto" onClick={() => {
-                const featuresSection = document.getElementById('features');
-                if (featuresSection) {
-                  featuresSection.scrollIntoView({ behavior: 'smooth' });
-                }
-              }}>
-                See How It Works
-                <PlayCircle className="ml-2 h-4 w-4" />
-              </Button>
             </div>
             <div className="mt-8 flex items-center justify-center gap-8 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
@@ -95,10 +76,6 @@ export default function Landing() {
               <div className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-primary" />
                 <span>14-Day Free Trial</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-primary" />
-                <span>Cancel Anytime</span>
               </div>
             </div>
           </div>
@@ -111,7 +88,7 @@ export default function Landing() {
           <div className="max-w-3xl mx-auto text-center mb-12">
             <h2 className="text-3xl font-bold mb-4">How It Works</h2>
             <p className="text-lg text-muted-foreground">
-              Three simple steps to never miss another business opportunity
+              Convert missed calls into opportunities in three simple steps
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-8 relative">
@@ -170,8 +147,8 @@ export default function Landing() {
                 icon: MessageCircle,
               },
               {
-                title: "Smart Scheduling",
-                description: "Schedule follow-ups and reminders automatically",
+                title: "Smart Follow-ups",
+                description: "Schedule messages to re-engage potential customers",
                 icon: CalendarDays,
               },
               {
@@ -190,9 +167,9 @@ export default function Landing() {
                 icon: MessageSquare,
               },
               {
-                title: "Business Hours",
-                description: "Set different responses for business hours",
-                icon: CalendarDays,
+                title: "ROI Calculator",
+                description: "See your potential return on investment",
+                icon: Calculator,
               },
             ].map((feature) => (
               <Card key={feature.title} className="group hover:shadow-md transition-all duration-200 bg-background border">
@@ -205,98 +182,6 @@ export default function Landing() {
                 </CardHeader>
               </Card>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section className="py-20 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">What Our Customers Say</h2>
-            <p className="text-lg text-muted-foreground">
-              Join thousands of businesses already using our platform
-            </p>
-          </div>
-          <div className="max-w-5xl mx-auto">
-            <Carousel
-              opts={{
-                align: "start",
-                loop: true,
-              }}
-              className="w-full"
-            >
-              <CarouselContent>
-                {[
-                  {
-                    quote: "Since implementing this system, we've seen a 40% increase in lead conversion from missed calls. It's been a game-changer for our business.",
-                    author: "Sarah Johnson",
-                    role: "Marketing Director",
-                    company: "Tech Solutions Inc",
-                  },
-                  {
-                    quote: "The automated responses have saved us countless hours and helped us capture leads we would have otherwise lost. Highly recommended!",
-                    author: "Michael Chen",
-                    role: "Business Owner",
-                    company: "Chen Consulting",
-                  },
-                  {
-                    quote: "Easy to set up and the customer support is fantastic. Our clients love getting immediate responses when we can't answer their calls.",
-                    author: "Emily Rodriguez",
-                    role: "Operations Manager",
-                    company: "ServicePro LLC",
-                  },
-                ].map((testimonial, index) => (
-                  <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
-                    <Card className="border-2 h-full">
-                      <CardHeader>
-                        <div className="flex items-center gap-1 text-primary mb-4">
-                          {[...Array(5)].map((_, i) => (
-                            <Star key={i} className="h-4 w-4 fill-current" />
-                          ))}
-                        </div>
-                        <CardDescription className="text-foreground">
-                          "{testimonial.quote}"
-                        </CardDescription>
-                        <div className="mt-4">
-                          <p className="font-semibold">{testimonial.author}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {testimonial.role}, {testimonial.company}
-                          </p>
-                        </div>
-                      </CardHeader>
-                    </Card>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              <CarouselPrevious />
-              <CarouselNext />
-            </Carousel>
-          </div>
-        </div>
-      </section>
-
-      {/* Lead Capture Section */}
-      <section className="py-20 bg-primary text-primary-foreground">
-        <div className="container mx-auto px-4">
-          <div className="max-w-xl mx-auto text-center">
-            <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
-            <p className="text-lg opacity-90 mb-8">
-              Join thousands of businesses using our platform to grow their customer base and increase revenue.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/register">
-                <Button
-                  size="lg"
-                  variant="secondary"
-                  className="w-full sm:w-auto group"
-                >
-                  Start Your Free Trial
-                  <ChevronRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </Button>
-              </Link>
-            </div>
-            <p className="mt-4 text-sm opacity-75">No credit card required</p>
           </div>
         </div>
       </section>
@@ -531,53 +416,30 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Impact Stats Section */}
-      <section className="py-16 bg-muted/30">
+      {/* Final CTA Section */}
+      <section className="py-20 bg-primary text-primary-foreground">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-4">
-            Missed Calls = Missed Revenue. Here's the Impact on Your Business.
-          </h2>
-          <p className="text-lg text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
-            Most businesses don't realize how much revenue they lose to unanswered calls. With automated SMS follow-ups, you turn missed calls into paying customers—effortlessly.
-          </p>
-          
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <Card className="text-center">
-              <CardHeader>
-                <PhoneOff className="w-12 h-12 mx-auto text-primary mb-4" />
-                <CardTitle className="text-2xl">42%</CardTitle>
-                <CardDescription className="text-base">
-                  of missed calls never get a callback — Customers go to competitors
-                </CardDescription>
-              </CardHeader>
-            </Card>
-            
-            <Card className="text-center">
-              <CardHeader>
-                <ArrowUpRight className="w-12 h-12 mx-auto text-primary mb-4" />
-                <CardTitle className="text-2xl">20%+</CardTitle>
-                <CardDescription className="text-base">
-                  conversion rate — A simple text after a missed call recaptures lost leads
-                </CardDescription>
-              </CardHeader>
-            </Card>
-            
-            <Card className="text-center">
-              <CardHeader>
-                <DollarSign className="w-12 h-12 mx-auto text-primary mb-4" />
-                <CardTitle className="text-2xl">High ROI</CardTitle>
-                <CardDescription className="text-base">
-                  Recovering just a few missed calls per month can cover the cost of the service
-                </CardDescription>
-              </CardHeader>
-            </Card>
+          <div className="max-w-xl mx-auto text-center">
+            <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
+            <p className="text-lg opacity-90 mb-8">
+              Start converting missed calls into opportunities today with our automated SMS follow-up system.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/register">
+                <Button
+                  size="lg"
+                  variant="secondary"
+                  className="w-full sm:w-auto group"
+                >
+                  Start Your Free Trial
+                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Button>
+              </Link>
+            </div>
+            <p className="mt-4 text-sm opacity-75">No credit card required</p>
           </div>
         </div>
       </section>
-
-      {/* How It Works Section (already included above) */}
-
-      {/* CTA Section (already included above) */}
 
       {/* Footer */}
       <footer className="py-8 border-t">

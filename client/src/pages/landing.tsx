@@ -8,10 +8,32 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { MessageCircle, Phone, CalendarDays, Users, Calculator, DollarSign, Percent, Check, PhoneOff, ArrowUpRight, MessageSquare } from "lucide-react";
+import {
+  MessageCircle,
+  Phone,
+  CalendarDays,
+  Users,
+  Calculator,
+  DollarSign,
+  Percent,
+  Check,
+  PhoneOff,
+  ArrowUpRight,
+  MessageSquare,
+  ArrowRight,
+  PlayCircle,
+  ChevronRight,
+  Star,
+} from "lucide-react";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useForm } from "react-hook-form";
 
 export default function Landing() {
   return (
@@ -27,69 +49,254 @@ export default function Landing() {
               <Button variant="ghost">Login</Button>
             </Link>
             <Link href="/register">
-              <Button>Sign Up</Button>
+              <Button>Get Started</Button>
             </Link>
           </div>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-16">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
-            Never Miss a Business Opportunity
-          </h1>
-          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Automate your business communications and convert missed calls into leads
-            with our intelligent response system.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/register">
-              <Button size="lg" className="w-full sm:w-auto">
-                Start Free Trial
+      <section className="relative pt-32 pb-20 overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-background" />
+          <div className="absolute w-[500px] h-[500px] -right-40 -top-40 bg-primary/10 rounded-full blur-3xl" />
+          <div className="absolute w-[500px] h-[500px] -left-40 top-40 bg-primary/5 rounded-full blur-3xl" />
+        </div>
+        <div className="container mx-auto px-4 relative">
+          <div className="max-w-4xl mx-auto text-center">
+            <h1 className="text-5xl md:text-6xl font-bold tracking-tight mb-6 bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+              Turn Missed Calls into Business Opportunities
+            </h1>
+            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+              Instantly respond to missed calls with automated SMS follow-ups. Never lose another lead to voicemail again.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/register">
+                <Button size="lg" className="w-full sm:w-auto group">
+                  Start Converting Missed Calls
+                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Button>
+              </Link>
+              <Button size="lg" variant="outline" className="w-full sm:w-auto" onClick={() => {
+                const featuresSection = document.getElementById('features');
+                if (featuresSection) {
+                  featuresSection.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}>
+                See How It Works
+                <PlayCircle className="ml-2 h-4 w-4" />
               </Button>
-            </Link>
+            </div>
+            <div className="mt-8 flex items-center justify-center gap-8 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-primary" />
+                <span>No Credit Card Required</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-primary" />
+                <span>14-Day Free Trial</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-primary" />
+                <span>Cancel Anytime</span>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-16 bg-muted/50">
+      {/* How It Works Section */}
+      <section className="py-20 bg-muted/30" id="features">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12">
-            Everything You Need to Grow Your Business
-          </h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="max-w-3xl mx-auto text-center mb-12">
+            <h2 className="text-3xl font-bold mb-4">How It Works</h2>
+            <p className="text-lg text-muted-foreground">
+              Three simple steps to never miss another business opportunity
+            </p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8 relative">
+            <div className="hidden md:block absolute top-1/2 left-1/4 right-1/4 h-0.5 bg-primary/20" />
             {[
               {
-                title: "Auto-Response",
-                description: "Never miss a call with instant SMS responses",
+                title: "Miss a Call",
+                description: "When a customer call goes unanswered",
+                icon: PhoneOff,
+                step: 1,
+              },
+              {
+                title: "Instant SMS Response",
+                description: "Automated text message is sent immediately",
+                icon: MessageSquare,
+                step: 2,
+              },
+              {
+                title: "Convert to Customer",
+                description: "Turn missed calls into opportunities",
+                icon: Users,
+                step: 3,
+              },
+            ].map((step, index) => (
+              <div key={step.title} className="relative">
+                <div className="absolute -top-4 left-4 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold z-10">
+                  {step.step}
+                </div>
+                <Card className="relative bg-background border-2 hover:border-primary/50 transition-colors">
+                  <CardHeader>
+                    <step.icon className="w-12 h-12 text-primary mb-4" />
+                    <CardTitle>{step.title}</CardTitle>
+                    <CardDescription>{step.description}</CardDescription>
+                  </CardHeader>
+                </Card>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Features Grid */}
+      <section className="py-20 bg-background">
+        <div className="container mx-auto px-4">
+          <div className="max-w-3xl mx-auto text-center mb-12">
+            <h2 className="text-3xl font-bold mb-4">Everything You Need</h2>
+            <p className="text-lg text-muted-foreground">
+              Powerful features to help you manage and grow your business
+            </p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              {
+                title: "Instant Response",
+                description: "Automated SMS sent immediately after missed calls",
                 icon: MessageCircle,
               },
               {
-                title: "Lead Tracking",
-                description: "Convert missed calls into valuable leads",
-                icon: Users,
-              },
-              {
-                title: "Scheduled Messages",
-                description: "Plan and automate follow-up messages",
+                title: "Smart Scheduling",
+                description: "Schedule follow-ups and reminders automatically",
                 icon: CalendarDays,
               },
               {
-                title: "Call Management",
-                description: "Track and manage all business calls efficiently",
+                title: "Lead Tracking",
+                description: "Track and manage all your leads in one place",
+                icon: Users,
+              },
+              {
+                title: "Call Analytics",
+                description: "Detailed insights into your call patterns",
                 icon: Phone,
               },
+              {
+                title: "Custom Messages",
+                description: "Personalize your automated responses",
+                icon: MessageSquare,
+              },
+              {
+                title: "Business Hours",
+                description: "Set different responses for business hours",
+                icon: CalendarDays,
+              },
             ].map((feature) => (
-              <Card key={feature.title} className="border-none">
+              <Card key={feature.title} className="group hover:shadow-md transition-all duration-200 bg-background border">
                 <CardHeader>
-                  <feature.icon className="w-12 h-12 text-primary mb-4" />
-                  <CardTitle>{feature.title}</CardTitle>
+                  <div className="mb-4 rounded-lg w-12 h-12 flex items-center justify-center bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                    <feature.icon className="w-6 h-6" />
+                  </div>
+                  <CardTitle className="text-xl">{feature.title}</CardTitle>
                   <CardDescription>{feature.description}</CardDescription>
                 </CardHeader>
               </Card>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="py-20 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="max-w-3xl mx-auto text-center mb-12">
+            <h2 className="text-3xl font-bold mb-4">What Our Customers Say</h2>
+            <p className="text-lg text-muted-foreground">
+              Join thousands of businesses already using our platform
+            </p>
+          </div>
+          <div className="max-w-5xl mx-auto">
+            <Carousel
+              opts={{
+                align: "start",
+                loop: true,
+              }}
+              className="w-full"
+            >
+              <CarouselContent>
+                {[
+                  {
+                    quote: "Since implementing this system, we've seen a 40% increase in lead conversion from missed calls. It's been a game-changer for our business.",
+                    author: "Sarah Johnson",
+                    role: "Marketing Director",
+                    company: "Tech Solutions Inc",
+                  },
+                  {
+                    quote: "The automated responses have saved us countless hours and helped us capture leads we would have otherwise lost. Highly recommended!",
+                    author: "Michael Chen",
+                    role: "Business Owner",
+                    company: "Chen Consulting",
+                  },
+                  {
+                    quote: "Easy to set up and the customer support is fantastic. Our clients love getting immediate responses when we can't answer their calls.",
+                    author: "Emily Rodriguez",
+                    role: "Operations Manager",
+                    company: "ServicePro LLC",
+                  },
+                ].map((testimonial, index) => (
+                  <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
+                    <Card className="border-2 h-full">
+                      <CardHeader>
+                        <div className="flex items-center gap-1 text-primary mb-4">
+                          {[...Array(5)].map((_, i) => (
+                            <Star key={i} className="h-4 w-4 fill-current" />
+                          ))}
+                        </div>
+                        <CardDescription className="text-foreground">
+                          "{testimonial.quote}"
+                        </CardDescription>
+                        <div className="mt-4">
+                          <p className="font-semibold">{testimonial.author}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {testimonial.role}, {testimonial.company}
+                          </p>
+                        </div>
+                      </CardHeader>
+                    </Card>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious />
+              <CarouselNext />
+            </Carousel>
+          </div>
+        </div>
+      </section>
+
+      {/* Lead Capture Section */}
+      <section className="py-20 bg-primary text-primary-foreground">
+        <div className="container mx-auto px-4">
+          <div className="max-w-xl mx-auto text-center">
+            <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
+            <p className="text-lg opacity-90 mb-8">
+              Join thousands of businesses using our platform to grow their customer base and increase revenue.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/register">
+                <Button
+                  size="lg"
+                  variant="secondary"
+                  className="w-full sm:w-auto group"
+                >
+                  Start Your Free Trial
+                  <ChevronRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Button>
+              </Link>
+            </div>
+            <p className="mt-4 text-sm opacity-75">No credit card required</p>
           </div>
         </div>
       </section>
@@ -368,64 +575,9 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* How It Works Section */}
-      <section className="py-16">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-4">
-            Get Started in Minutes—No Complicated Setup
-          </h2>
-          <p className="text-lg text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
-            You don't need extra software or complicated integrations. Just sign up, get your number, and start saving lost leads today.
-          </p>
+      {/* How It Works Section (already included above) */}
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <Card className="relative">
-              <div className="absolute -top-4 left-4 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">1</div>
-              <CardHeader>
-                <Phone className="w-12 h-12 text-primary mb-4" />
-                <CardTitle>Connect Your Business Number</CardTitle>
-                <CardDescription>We handle the rest</CardDescription>
-              </CardHeader>
-            </Card>
-
-            <Card className="relative">
-              <div className="absolute -top-4 left-4 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">2</div>
-              <CardHeader>
-                <MessageSquare className="w-12 h-12 text-primary mb-4" />
-                <CardTitle>Miss a Call? We Auto-Reply</CardTitle>
-                <CardDescription>Customers receive a text instantly</CardDescription>
-              </CardHeader>
-            </Card>
-
-            <Card className="relative">
-              <div className="absolute -top-4 left-4 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">3</div>
-              <CardHeader>
-                <Users className="w-12 h-12 text-primary mb-4" />
-                <CardTitle>Recover More Customers</CardTitle>
-                <CardDescription>Simple SMS follow-ups bring them back</CardDescription>
-              </CardHeader>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-16 bg-primary text-primary-foreground">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold mb-6">
-            Ready to Transform Your Business Communication?
-          </h2>
-          <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
-            Join thousands of businesses using our platform to grow their customer base
-            and increase revenue.
-          </p>
-          <Link href="/register">
-            <Button size="lg" variant="secondary">
-              Start Your Free Trial
-            </Button>
-          </Link>
-        </div>
-      </section>
+      {/* CTA Section (already included above) */}
 
       {/* Footer */}
       <footer className="py-8 border-t">

@@ -8,10 +8,22 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { MessageCircle, Phone, CalendarDays, Users, Calculator, DollarSign, Percent, Check, PhoneOff, ArrowUpRight, MessageSquare } from "lucide-react";
+import {
+  MessageCircle,
+  Phone,
+  CalendarDays,
+  Users,
+  Calculator,
+  DollarSign,
+  Percent,
+  Check,
+  PhoneOff,
+  ArrowUpRight,
+  MessageSquare,
+  ArrowRight,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useForm } from "react-hook-form";
 
 export default function Landing() {
   return (
@@ -27,65 +39,145 @@ export default function Landing() {
               <Button variant="ghost">Login</Button>
             </Link>
             <Link href="/register">
-              <Button>Sign Up</Button>
+              <Button>Get Started</Button>
             </Link>
           </div>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-16">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
-            Never Miss a Business Opportunity
-          </h1>
-          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Automate your business communications and convert missed calls into leads
-            with our intelligent response system.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/register">
-              <Button size="lg" className="w-full sm:w-auto">
-                Start Free Trial
-              </Button>
-            </Link>
+      <section className="relative pt-32 pb-20 overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-background" />
+          <div className="absolute w-[500px] h-[500px] -right-40 -top-40 bg-primary/10 rounded-full blur-3xl" />
+          <div className="absolute w-[500px] h-[500px] -left-40 top-40 bg-primary/5 rounded-full blur-3xl" />
+        </div>
+        <div className="container mx-auto px-4 relative">
+          <div className="max-w-4xl mx-auto text-center">
+            <h1 className="text-5xl md:text-6xl font-bold tracking-tight mb-6 bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+              Turn Missed Calls into Business Opportunities
+            </h1>
+            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+              Instantly respond to missed calls with automated SMS follow-ups. Never lose another lead to voicemail again.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/register">
+                <Button size="lg" className="w-full sm:w-auto group">
+                  Start Converting Missed Calls
+                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Button>
+              </Link>
+            </div>
+            <div className="mt-8 flex items-center justify-center gap-8 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-primary" />
+                <span>No Credit Card Required</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-primary" />
+                <span>14-Day Free Trial</span>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-16 bg-muted/50">
+      {/* How It Works Section */}
+      <section className="py-20 bg-muted/30" id="features">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12">
-            Everything You Need to Grow Your Business
-          </h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="max-w-3xl mx-auto text-center mb-12">
+            <h2 className="text-3xl font-bold mb-4">How It Works</h2>
+            <p className="text-lg text-muted-foreground">
+              Convert missed calls into opportunities in three simple steps
+            </p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8 relative">
+            <div className="hidden md:block absolute top-1/2 left-1/4 right-1/4 h-0.5 bg-primary/20" />
             {[
               {
-                title: "Auto-Response",
-                description: "Never miss a call with instant SMS responses",
+                title: "Miss a Call",
+                description: "When a customer call goes unanswered",
+                icon: PhoneOff,
+                step: 1,
+              },
+              {
+                title: "Instant SMS Response",
+                description: "Automated text message is sent immediately",
+                icon: MessageSquare,
+                step: 2,
+              },
+              {
+                title: "Convert to Customer",
+                description: "Turn missed calls into opportunities",
+                icon: Users,
+                step: 3,
+              },
+            ].map((step, index) => (
+              <div key={step.title} className="relative">
+                <div className="absolute -top-4 left-4 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold z-10">
+                  {step.step}
+                </div>
+                <Card className="relative bg-background border-2 hover:border-primary/50 transition-colors">
+                  <CardHeader>
+                    <step.icon className="w-12 h-12 text-primary mb-4" />
+                    <CardTitle>{step.title}</CardTitle>
+                    <CardDescription>{step.description}</CardDescription>
+                  </CardHeader>
+                </Card>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Features Grid */}
+      <section className="py-20 bg-background">
+        <div className="container mx-auto px-4">
+          <div className="max-w-3xl mx-auto text-center mb-12">
+            <h2 className="text-3xl font-bold mb-4">Everything You Need</h2>
+            <p className="text-lg text-muted-foreground">
+              Powerful features to help you manage and grow your business
+            </p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              {
+                title: "Instant Response",
+                description: "Automated SMS sent immediately after missed calls",
                 icon: MessageCircle,
               },
               {
-                title: "Lead Tracking",
-                description: "Convert missed calls into valuable leads",
-                icon: Users,
-              },
-              {
-                title: "Scheduled Messages",
-                description: "Plan and automate follow-up messages",
+                title: "Smart Follow-ups",
+                description: "Schedule messages to re-engage potential customers",
                 icon: CalendarDays,
               },
               {
-                title: "Call Management",
-                description: "Track and manage all business calls efficiently",
+                title: "Lead Tracking",
+                description: "Track and manage all your leads in one place",
+                icon: Users,
+              },
+              {
+                title: "Call Analytics",
+                description: "Detailed insights into your call patterns",
                 icon: Phone,
               },
+              {
+                title: "Custom Messages",
+                description: "Personalize your automated responses",
+                icon: MessageSquare,
+              },
+              {
+                title: "ROI Calculator",
+                description: "See your potential return on investment",
+                icon: Calculator,
+              },
             ].map((feature) => (
-              <Card key={feature.title} className="border-none">
+              <Card key={feature.title} className="group hover:shadow-md transition-all duration-200 bg-background border">
                 <CardHeader>
-                  <feature.icon className="w-12 h-12 text-primary mb-4" />
-                  <CardTitle>{feature.title}</CardTitle>
+                  <div className="mb-4 rounded-lg w-12 h-12 flex items-center justify-center bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                    <feature.icon className="w-6 h-6" />
+                  </div>
+                  <CardTitle className="text-xl">{feature.title}</CardTitle>
                   <CardDescription>{feature.description}</CardDescription>
                 </CardHeader>
               </Card>
@@ -324,106 +416,28 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Impact Stats Section */}
-      <section className="py-16 bg-muted/30">
+      {/* Final CTA Section */}
+      <section className="py-20 bg-primary text-primary-foreground">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-4">
-            Missed Calls = Missed Revenue. Here's the Impact on Your Business.
-          </h2>
-          <p className="text-lg text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
-            Most businesses don't realize how much revenue they lose to unanswered calls. With automated SMS follow-ups, you turn missed calls into paying customers—effortlessly.
-          </p>
-          
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <Card className="text-center">
-              <CardHeader>
-                <PhoneOff className="w-12 h-12 mx-auto text-primary mb-4" />
-                <CardTitle className="text-2xl">42%</CardTitle>
-                <CardDescription className="text-base">
-                  of missed calls never get a callback — Customers go to competitors
-                </CardDescription>
-              </CardHeader>
-            </Card>
-            
-            <Card className="text-center">
-              <CardHeader>
-                <ArrowUpRight className="w-12 h-12 mx-auto text-primary mb-4" />
-                <CardTitle className="text-2xl">20%+</CardTitle>
-                <CardDescription className="text-base">
-                  conversion rate — A simple text after a missed call recaptures lost leads
-                </CardDescription>
-              </CardHeader>
-            </Card>
-            
-            <Card className="text-center">
-              <CardHeader>
-                <DollarSign className="w-12 h-12 mx-auto text-primary mb-4" />
-                <CardTitle className="text-2xl">High ROI</CardTitle>
-                <CardDescription className="text-base">
-                  Recovering just a few missed calls per month can cover the cost of the service
-                </CardDescription>
-              </CardHeader>
-            </Card>
+          <div className="max-w-xl mx-auto text-center">
+            <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
+            <p className="text-lg opacity-90 mb-8">
+              Start converting missed calls into opportunities today with our automated SMS follow-up system.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/register">
+                <Button
+                  size="lg"
+                  variant="secondary"
+                  className="w-full sm:w-auto group"
+                >
+                  Start Your Free Trial
+                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Button>
+              </Link>
+            </div>
+            <p className="mt-4 text-sm opacity-75">No credit card required</p>
           </div>
-        </div>
-      </section>
-
-      {/* How It Works Section */}
-      <section className="py-16">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-4">
-            Get Started in Minutes—No Complicated Setup
-          </h2>
-          <p className="text-lg text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
-            You don't need extra software or complicated integrations. Just sign up, get your number, and start saving lost leads today.
-          </p>
-
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <Card className="relative">
-              <div className="absolute -top-4 left-4 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">1</div>
-              <CardHeader>
-                <Phone className="w-12 h-12 text-primary mb-4" />
-                <CardTitle>Connect Your Business Number</CardTitle>
-                <CardDescription>We handle the rest</CardDescription>
-              </CardHeader>
-            </Card>
-
-            <Card className="relative">
-              <div className="absolute -top-4 left-4 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">2</div>
-              <CardHeader>
-                <MessageSquare className="w-12 h-12 text-primary mb-4" />
-                <CardTitle>Miss a Call? We Auto-Reply</CardTitle>
-                <CardDescription>Customers receive a text instantly</CardDescription>
-              </CardHeader>
-            </Card>
-
-            <Card className="relative">
-              <div className="absolute -top-4 left-4 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">3</div>
-              <CardHeader>
-                <Users className="w-12 h-12 text-primary mb-4" />
-                <CardTitle>Recover More Customers</CardTitle>
-                <CardDescription>Simple SMS follow-ups bring them back</CardDescription>
-              </CardHeader>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-16 bg-primary text-primary-foreground">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold mb-6">
-            Ready to Transform Your Business Communication?
-          </h2>
-          <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
-            Join thousands of businesses using our platform to grow their customer base
-            and increase revenue.
-          </p>
-          <Link href="/register">
-            <Button size="lg" variant="secondary">
-              Start Your Free Trial
-            </Button>
-          </Link>
         </div>
       </section>
 
